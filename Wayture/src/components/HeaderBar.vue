@@ -18,11 +18,9 @@
 import { computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuth } from '../composables/useAuth';
-import { useTourStore } from '../composables/useTourStore';
 
 const auth = useAuth();
 const router = useRouter();
-const tour = useTourStore();
 
 onMounted(async () => {
   await auth.initAuth();
@@ -44,18 +42,7 @@ function goHome() {
 }
 
 function openSettings() {
-  // 触发MainPage的导引对话框
-  if (router.currentRoute.value.path === '/main') {
-    // 通过自定义事件通知MainPage打开设置
-    window.dispatchEvent(new CustomEvent('openTourGuide'));
-  } else {
-    // 如果不在主页面，跳转到主页面并打开设置
-    router.push('/main').then(() => {
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('openTourGuide'));
-      }, 100);
-    });
-  }
+  window.dispatchEvent(new CustomEvent('openTourGuide'));
 }
 </script>
 
@@ -70,7 +57,7 @@ function openSettings() {
   align-items: center;
   justify-content: space-between;
   padding: 0 28px;
-  background: rgba(15, 23, 42, 0.88);
+  background: rgba(15, 23, 42, 0.2);
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
   z-index: 20;
 }

@@ -3,9 +3,14 @@ import { TourPointData } from '../data/tourPoints';
 import { useAuth } from './useAuth';
 
 type TourPoint = TourPointData;
+type UserSettings = {
+  nickname: string;
+  tourStyle: string;
+};
 
 const apiBase = import.meta.env.VITE_API_BASE_URL || '';
 const mapImageUrl = `${apiBase}/static/map.png`;
+const userSettingsStorageKey = 'wayture:userSettings';
 
 const auth = useAuth();
 const currentUsername = computed(() => auth.account.value?.name || auth.account.value?.username || 'guest');
@@ -18,14 +23,33 @@ const activeTab = ref<'map' | 'list'>('map');
 const selectedIds = ref<number[]>([]);
 const highlightId = ref<number | null>(null);
 
+function loadUserSettingsFromStorage(): UserSettings {
+  try {
+    const raw = localStorage.getItem(userSettingsStorageKey);
+    if (!raw) {
+      return { nickname: '', tourStyle: '' };
+    }
+    const parsed = JSON.parse(raw) as Partial<UserSettings>;
+    return {
+      nickname: parsed.nickname || '',
+      tourStyle: parsed.tourStyle || '',
+    };
+  } catch (e) {
+    console.warn('Failed to load user settings from localStorage:', e);
+    return { nickname: '', tourStyle: '' };
+  }
+}
+
+function saveUserSettingsToStorage(settings: UserSettings) {
+  try {
+    localStorage.setItem(userSettingsStorageKey, JSON.stringify(settings));
+  } catch (e) {
+    console.warn('Failed to save user settings to localStorage:', e);
+  }
+}
+
 // 用户设置
-const userSettings = ref<{
-  nickname: string;
-  tourStyle: string;
-}>({
-  nickname: '',
-  tourStyle: ''
-});
+const userSettings = ref<UserSettings>(loadUserSettingsFromStorage());
 
 // 路线规划
 const routePlan = ref<Array<{ order: number; attraction: any; tips: string }>>([]);
@@ -164,8 +188,9 @@ function clearSelection() {
   selectedIds.value = [];
 }
 
-function setUserSettings(settings: { nickname: string; tourStyle: string }) {
+function setUserSettings(settings: UserSettings) {
   userSettings.value = { ...settings };
+  saveUserSettingsToStorage(userSettings.value);
 }
 
 function hasUserSettings(): boolean {

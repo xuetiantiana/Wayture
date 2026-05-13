@@ -87,13 +87,6 @@
         <button class="button-primary full-width" :disabled="selectedPoints.length === 0" @click="generateTour">生成游览攻略</button>
       </template>
     </div>
-
-    <!-- 导引对话框 -->
-    <TourGuideModal
-      :show="showGuideModal"
-      @complete="onGuideComplete"
-      @close="onGuideClose"
-    />
   </section>
 </template>
 
@@ -101,7 +94,6 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTourStore } from '../composables/useTourStore';
-import TourGuideModal from '../components/TourGuideModal.vue';
 
 const router = useRouter();
 const tour = useTourStore();
@@ -115,7 +107,6 @@ const selectedPoint = computed(() => points.value.find((item) => item.id === sel
 const selectedPopupOpen = ref(true);
 const mapCanvas = ref<HTMLCanvasElement | null>(null);
 const mapImageElement = new Image();
-const showGuideModal = ref(false);
 
 mapImageElement.src = tour.mapImageUrl;
 
@@ -150,15 +141,6 @@ function generateTour() {
     return;
   }
   router.push('/tour');
-}
-
-function onGuideComplete(settings: { nickname: string; tourStyle: string }) {
-  console.log('导引完成:', settings);
-  showGuideModal.value = false;
-}
-
-function onGuideClose() {
-  showGuideModal.value = false;
 }
 
 function toggleSelectedPopup() {
@@ -256,16 +238,6 @@ onMounted(async () => {
     mapImageElement.onload = drawMap;
   }
   window.addEventListener('resize', resizeCanvas);
-
-  // 检查是否需要显示导引对话框
-  if (!tour.hasUserSettings()) {
-    showGuideModal.value = true;
-  }
-
-  // 监听打开导引对话框的事件
-  window.addEventListener('openTourGuide', () => {
-    showGuideModal.value = true;
-  });
 });
 
 onUnmounted(() => {

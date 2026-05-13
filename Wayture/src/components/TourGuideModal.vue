@@ -2,52 +2,59 @@
   <Teleport to="body">
     <div v-if="show" class="modal-overlay" @click="closeOnOverlay">
       <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3>{{ step === 1 ? '设置昵称' : '选择游览风格' }}</h3>
-          <button class="close-btn" @click="close">&times;</button>
-        </div>
+        <button v-if="tour.hasUserSettings()" class="close-btn" @click="close">&times;</button>
 
-        <div class="modal-body">
-          <!-- 第一步：昵称输入 -->
-          <div v-if="step === 1" class="step-content">
-            <p>请为你的旅程设置一个昵称或标题：</p>
-            <input
-              v-model="nickname"
-              type="text"
-              placeholder="例如：北京五日游、浪漫巴黎行"
-              class="nickname-input"
-              @keyup.enter="nextStep"
-            />
+        <template v-if="step === 1">
+          <div class="modal-header">
+            <h3>Welcome to FamilyFest!🎈</h3>
           </div>
+          <p class="modal-subtitle">Today’s adventure begins here.</p>
 
-          <!-- 第二步：风格选择 -->
-          <div v-else-if="step === 2" class="step-content">
-            <p>请选择你的游览风格：</p>
-            <div class="style-options">
-              <button
-                v-for="style in tourStyles"
-                :key="style.value"
-                :class="['style-btn', { active: selectedStyle === style.value }]"
-                @click="selectedStyle = style.value"
-              >
-                <span class="style-icon">{{ style.icon }}</span>
-                <span class="style-name">{{ style.name }}</span>
-                <span class="style-desc">{{ style.desc }}</span>
-              </button>
+          <div class="modal-body">
+            <div class="step-content">
+              <input
+                v-model="nickname"
+                type="text"
+                placeholder="Pick a fun nickname for your adventure! eg:The XiaoQi Family Passport"
+                class="nickname-input"
+                @keyup.enter="nextStep"
+              />
             </div>
           </div>
-        </div>
 
-        <div class="modal-footer">
-          <button v-if="step > 1" class="btn-secondary" @click="prevStep">上一步</button>
-          <button
-            class="btn-primary"
-            :disabled="!canProceed"
-            @click="step === 2 ? complete() : nextStep()"
-          >
-            {{ step === 2 ? '完成' : '下一步' }}
-          </button>
-        </div>
+          <div class="modal-footer">
+            <button class="btn-primary" :disabled="!canProceed" @click="nextStep">Next</button>
+          </div>
+        </template>
+
+        <template v-else-if="step === 2">
+          <div class="modal-header">
+            <h3>Choose your travel style</h3>
+          </div>
+          <p class="modal-subtitle">Pick the vibe for this adventure.</p>
+
+          <div class="modal-body">
+            <div class="step-content">
+              <div class="style-options">
+                <button
+                  v-for="style in tourStyles"
+                  :key="style.value"
+                  :class="['style-btn', { active: selectedStyle === style.value }]"
+                  @click="selectedStyle = style.value"
+                >
+                  <span class="style-icon">{{ style.icon }}</span>
+                  <span class="style-name">{{ style.name }}</span>
+                  <span class="style-desc">{{ style.desc }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn-secondary" @click="prevStep">上一步</button>
+            <button class="btn-primary" :disabled="!canProceed" @click="complete">Finish</button>
+          </div>
+        </template>
       </div>
     </div>
   </Teleport>
@@ -132,106 +139,126 @@ function closeOnOverlay() {
 </script>
 
 <style scoped>
+:global(body:has(.modal-overlay)) {
+  overflow: hidden;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .modal-content {
-  background: rgba(15, 23, 42, 0.95);
-  border-radius: 24px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
+  position: relative;
+  width: 670px;
+  padding: 56px 40px;
+  background: #202020;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
   overflow-y: auto;
 }
 
 .modal-header {
+  position: relative;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding: 24px 24px 0;
-  margin-bottom: 24px;
 }
 
 .modal-header h3 {
   margin: 0;
-  color: #e2e8f0;
-  font-size: 1.5rem;
+  color: #f8fafc;
+  font-size: 40px;
+  line-height: 1.15;
+  font-weight: 800;
+  text-align: center;
+  font-weight: 600;
 }
 
 .close-btn {
+  position: absolute;
+  right: 20px;
+  top: 18px;
   background: none;
   border: none;
-  color: #94a3b8;
-  font-size: 24px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 34px;
+  line-height: 1;
   cursor: pointer;
-  padding: 4px;
+  padding: 0 4px;
   border-radius: 8px;
   transition: all 0.2s;
 }
 
 .close-btn:hover {
-  background: rgba(148, 163, 184, 0.1);
-  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
+.modal-subtitle {
+  margin: 4px 0 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 24px;
+  line-height: 1.25;
+  text-align: center;
 }
 
 .modal-body {
-  padding: 0 24px;
+  margin-top: 43px;
 }
 
 .step-content {
   text-align: center;
 }
 
-.step-content p {
-  color: #cbd5e1;
-  margin-bottom: 20px;
-  font-size: 1.1rem;
-}
-
 .nickname-input {
   width: 100%;
-  padding: 16px;
-  border: 2px solid rgba(148, 163, 184, 0.2);
-  border-radius: 12px;
-  background: rgba(15, 23, 42, 0.8);
-  color: #e2e8f0;
-  font-size: 1rem;
-  transition: border-color 0.2s;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #f8fafc;
+  font-size: 18px;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+
+.nickname-input::placeholder {
+  color: rgba(255, 255, 255, 0.52);
 }
 
 .nickname-input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: rgba(255, 181, 0, 0.72);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 3px rgba(255, 181, 0, 0.12);
 }
 
 .style-options {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 20px;
+  gap: 14px;
 }
 
 .style-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px 16px;
-  border: 2px solid rgba(148, 163, 184, 0.2);
-  border-radius: 16px;
-  background: rgba(15, 23, 42, 0.6);
+  padding: 16px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
   color: #cbd5e1;
   cursor: pointer;
   transition: all 0.2s;
@@ -239,13 +266,13 @@ function closeOnOverlay() {
 }
 
 .style-btn:hover {
-  border-color: #3b82f6;
-  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(255, 181, 0, 0.72);
+  background: rgba(255, 181, 0, 0.08);
 }
 
 .style-btn.active {
-  border-color: #3b82f6;
-  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(255, 181, 0, 0.9);
+  background: rgba(255, 181, 0, 0.14);
   color: #e2e8f0;
 }
 
@@ -267,18 +294,17 @@ function closeOnOverlay() {
 
 .modal-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 12px;
-  padding: 24px;
-  margin-top: 24px;
-  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  margin-top: 39px;
 }
 
 .btn-secondary,
 .btn-primary {
-  padding: 12px 24px;
-  border-radius: 12px;
-  font-size: 1rem;
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 8px;
+  font-size: 20px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -295,16 +321,18 @@ function closeOnOverlay() {
 }
 
 .btn-primary {
-  background: #3b82f6;
-  color: white;
+  flex: 1;
+  width: 100%;
+  background: #ffb300;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #2563eb;
+  background: #ffc01c;
 }
 
 .btn-primary:disabled {
-  opacity: 0.5;
+  opacity: 0.65;
   cursor: not-allowed;
 }
 
@@ -314,8 +342,32 @@ function closeOnOverlay() {
   }
 
   .modal-content {
-    margin: 20px;
-    width: calc(100% - 40px);
+    width: calc(100% - 32px);
+    height: auto;
+    min-height: 404px;
+    padding: 34px 20px;
+  }
+
+  .modal-header h3 {
+    font-size: 30px;
+  }
+
+  .modal-subtitle {
+    font-size: 18px;
+  }
+
+  .modal-body {
+    margin-top: 30px;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    margin-top: 28px;
+  }
+
+  .btn-secondary,
+  .btn-primary {
+    width: 100%;
   }
 }
 </style>
