@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <HeaderBar />
-    <main class="page-shell">
+    <main>
       <router-view />
     </main>
     <TourGuideModal

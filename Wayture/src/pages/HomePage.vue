@@ -1,6 +1,6 @@
 <template>
   <section class="hero-card" aria-label="首页">
-    <div class="hero-background"></div>
+    <img class="hero-background" src="../assets/images/index-bg.png" alt="" aria-hidden="true" />
     <!-- <div class="hero-vignette"></div> -->
     <div class="hero-content">
       <p class="hero-kicker">CHIMU</p>
@@ -59,10 +59,14 @@ function memories() {
 
 .hero-background {
   position: absolute;
-  inset: 0;
-  background-image: url('../assets/images/index-bg.png');
-  background-size: cover;
-  background-position: center;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
 }
 
 .hero-vignette {
