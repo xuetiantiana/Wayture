@@ -10,8 +10,10 @@
   },
   "dependencies": {
     "@azure/msal-browser": "^5.10.0",
+    "swiper": "^12.1.4",
     "vue": "^3.4.0",
-    "vue-router": "^4.3.0"
+    "vue-router": "^4.3.0",
+    "vue-waterfall-plugin-next": "^3.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

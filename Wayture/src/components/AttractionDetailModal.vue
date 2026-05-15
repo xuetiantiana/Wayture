@@ -4,30 +4,29 @@
       ×
     </button>
 
+    <div class="modal-body">
     <div class="image-shell">
-      <div class="image-frame">
-        <div class="hero-image" :style="heroImageStyle"></div>
-      </div>
-      <div v-if="point.images.length > 1" class="image-dots" aria-label="景点图片切换">
-        <button
-          v-for="(image, index) in point.images"
-          :key="`${point.id}-${image}-${index}`"
-          class="dot"
-          :class="{ active: index === currentImageIndex }"
-          type="button"
-          :aria-label="`查看第 ${index + 1} 张图片`"
-          @click="currentImageIndex = index"
-        ></button>
-      </div>
+      <Swiper
+        v-if="point.images.length"
+        :modules="swiperModules"
+        :pagination="{ clickable: true }"
+        :loop="point.images.length > 1"
+        class="hero-swiper"
+      >
+        <SwiperSlide v-for="(img, i) in point.images" :key="`${point.id}-${i}`">
+          <div class="hero-image" :style="{ backgroundImage: `url(${img})` }"></div>
+        </SwiperSlide>
+      </Swiper>
+      <div v-else class="hero-image hero-image--placeholder"></div>
     </div>
 
     <div class="content">
       <div class="meta-row">
         <div>
-          <div class="small-tag" :style="{ backgroundColor: tagBackground }">{{ point.field }}</div>
-          <h3>{{ point.name }}</h3>
+          
+          <h3>{{ point.name }}<div class="small-tag" :style="{ backgroundColor: tagBackground }">{{ point.field }}</div></h3>
         </div>
-        <span class="duration">建议游玩时长：{{ point.cost }}</span>
+        <span class="duration">建议游玩时长：<span>{{ point.cost }}</span></span>
       </div>
 
       <div class="copy-block">
@@ -35,19 +34,22 @@
         <p class="description">{{ point.description }}</p>
       </div>
 
-      <div class="tag-row">
-        <span v-for="tag in detailTags" :key="tag" class="pill-tag">{{ tag }}</span>
-      </div>
+      
 
       <button class="cta-button" type="button" :disabled="isAdded" @click="$emit('add', point.id)">
         {{ isAdded ? '已加入路线' : '加入路线' }}
       </button>
     </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed } from 'vue';
+import { Swiper, SwiperSlide } from 'swiper/vue';
+import { Pagination } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
 import type { TourPointData } from '../data/tourPoints';
 
 const props = defineProps<{
@@ -61,21 +63,7 @@ defineEmits<{
   add: [id: number];
 }>();
 
-const currentImageIndex = ref(0);
-
-watch(
-  () => props.point.id,
-  () => {
-    currentImageIndex.value = 0;
-  },
-  { immediate: true }
-);
-
-const heroImageStyle = computed(() => ({
-  backgroundImage: props.point.images.length
-    ? `url(${props.point.images[currentImageIndex.value]})`
-    : 'linear-gradient(180deg, rgba(65, 54, 24, 0.55), rgba(23, 23, 23, 0.88))',
-}));
+const swiperModules = [Pagination];
 
 const tagBackground = computed(() => props.accentColor ?? 'rgba(140, 110, 32, 0.58)');
 
@@ -96,66 +84,69 @@ const detailTags = computed(() => {
   top: 50%;
   transform: translate(-50%, -50%);
   width: min(480px, calc(100% - 48px));
-  min-height: 720px;
-  max-height: calc(100% - 24px);
-  overflow-y: auto;
-  padding: 18px 18px 0;
-  border-radius: 0;
-  background: rgba(29, 26, 24, 0.96);
-  border: 1px solid rgba(217, 184, 106, 0.22);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(12px);
-  z-index: 10;
+  padding-top: 20px;
+  max-height: 90vh;
+  overflow: visible;
+  z-index: 99;
+  display: flex;
+  flex-direction: column;
 
   .close-button {
     position: absolute;
-    top: 10px;
-    right: 12px;
-    width: 30px;
-    height: 30px;
+    top: -14px;
+    right: -4px;
+    width: 32px;
+    height: 32px;
     border: none;
     padding: 0;
-    color: rgba(255, 247, 232, 0.82);
-    background: transparent;
-    font-size: 28px;
+    border-radius: 8px;
+    color: rgba(255, 247, 232, 0.9);
+    background: rgba(40, 36, 30, 0.92);
+    border: 1px solid rgba(217, 184, 106, 0.3);
+    font-size: 22px;
     line-height: 1;
+    z-index: 11;
+    display: grid;
+    place-items: center;
+  }
+
+  .modal-body {
+    overflow-y: auto;
+    max-height: 90vh;
+    min-height: 0;
+    background: rgba(29, 26, 24, 0.96);
+    border: 1px solid rgba(217, 184, 106, 0.22);
+    border-radius: 0;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
+    padding: 18px 18px 0;
   }
 
   .image-shell {
-    padding-top: 16px;
+    .hero-swiper {
+      border-radius: 16px;
+      overflow: hidden;
 
-    .image-frame {
-      padding: 18px;
-      border-radius: 24px;
-      background: rgba(17, 16, 15, 0.92);
+      :global(.swiper-pagination-bullet) {
+        background: rgba(255, 244, 233, 0.72);
+        opacity: 1;
+      }
 
-      .hero-image {
-        aspect-ratio: 1.48;
-        border-radius: 18px;
-        background-color: #24303d;
-        background-position: center;
-        background-repeat: no-repeat;
-        background-size: cover;
+      :global(.swiper-pagination-bullet-active) {
+        background: #ff7c2a;
       }
     }
 
-    .image-dots {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px 0 2px;
+    .hero-image {
+      aspect-ratio: 1.48;
+      background-color: #24303d;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      width: 100%;
 
-      .dot {
-        width: 8px;
-        height: 8px;
-        border: none;
-        border-radius: 999px;
-        padding: 0;
-        background: rgba(255, 244, 233, 0.72);
-
-        &.active {
-          background: #ff7c2a;
-        }
+      &--placeholder {
+        background: linear-gradient(180deg, rgba(65, 54, 24, 0.55), rgba(23, 23, 23, 0.88));
       }
     }
   }
@@ -183,14 +174,16 @@ const detailTags = computed(() => {
       h3 {
         margin: 10px 0 0;
         color: #fbf6eb;
-        font-size: 1.75rem;
+        font-size: 1.25rem;
         line-height: 1.2;
       }
 
       .duration {
-        color: #ffbf1c;
+        
         font-size: 1rem;
-        font-weight: 700;
+        span{
+            color: #ffbf1c;
+        }
       }
     }
 
@@ -239,7 +232,7 @@ const detailTags = computed(() => {
       border-radius: 14px;
       background: linear-gradient(180deg, #ffbc1e 0%, #f5a400 100%);
       color: #fff9eb;
-      font-size: 1.3rem;
+      font-size: 1.25rem;
       font-weight: 700;
       box-shadow: 0 12px 24px rgba(168, 104, 5, 0.3);
 
@@ -254,10 +247,10 @@ const detailTags = computed(() => {
 @media (max-width: 960px) {
   .attraction-modal {
     width: min(92vw, 460px);
-    min-height: auto;
-    max-height: calc(100% - 24px);
-    overflow-y: auto;
-    padding: 14px 14px 0;
+
+    .modal-body {
+      padding: 14px 14px 0;
+    }
 
     .content {
       .meta-row {

@@ -7,6 +7,48 @@ const DEFAULT_DETAIL_MODAL_OPTIONS = {
 };
 
 /**
+ * 计算事件触发元素在容器内的百分比锚点。
+ *
+ * @param {HTMLElement | null} triggerElement 触发元素
+ * @param {HTMLElement | null} containerElement 容器元素
+ * @returns {{ anchorLocation: [number, number] | null; containerSize: { width: number; height: number } | null }}
+ */
+export function calculateAnchorLocation(triggerElement, containerElement) {
+  if (!triggerElement || !containerElement) {
+    return {
+      anchorLocation: null,
+      containerSize: null,
+    };
+  }
+
+  const containerRect = containerElement.getBoundingClientRect();
+  const triggerRect = triggerElement.getBoundingClientRect();
+  const anchorX = triggerRect.left + triggerRect.width / 2 - containerRect.left;
+  const anchorY = triggerRect.top + triggerRect.height / 2 - containerRect.top;
+
+  if (!containerRect.width || !containerRect.height) {
+    return {
+      anchorLocation: null,
+      containerSize: {
+        width: containerRect.width,
+        height: containerRect.height,
+      },
+    };
+  }
+
+  return {
+    anchorLocation: [
+      (anchorX / containerRect.width) * 100,
+      (anchorY / containerRect.height) * 100,
+    ],
+    containerSize: {
+      width: containerRect.width,
+      height: containerRect.height,
+    },
+  };
+}
+
+/**
  * 根据地图点位坐标计算详情弹窗位置。
  * 水平方向优先放点位右侧，右侧空间不足则放左侧；
  * 垂直方向默认比点位 top 高 pointTopOffset，并根据容器上下边界修正。

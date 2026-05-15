@@ -1,5 +1,5 @@
 <template>
-  <section class="flex-row tour-details-shell">
+  <section class="flex-row tour-details-shell" style="height: 100vh;padding-top: 4em;box-sizing: border-box;">
     <aside class="panel-card p-24 side-panel">
       <div class="flex-row justify-between align-center mb-20">
         <div>
@@ -133,6 +133,15 @@ function resizeCanvas() {
 }
 
 onMounted(async () => {
+  // if (tour.selectedIds.value.length === 0) {
+  //   router.replace('/main');
+  //   return;
+  // }
+
+  // if (tour.points.value.length === 0) {
+  //   await tour.loadTourPoints();
+  // }
+
   if (selectedPoints.value.length === 0) {
     router.replace('/main');
     return;
@@ -174,6 +183,7 @@ watch([orderedPoints, highlightId], async () => {
 .side-panel {
   flex: 0 0 380px;
   min-width: 300px;
+  overflow: auto;
 }
 .map-panel {
   flex: 1;

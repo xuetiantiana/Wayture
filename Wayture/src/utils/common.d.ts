@@ -5,6 +5,11 @@ export type DetailModalContainerSize = {
   height: number;
 };
 
+export type DetailModalAnchorResult = {
+  anchorLocation: [number, number] | null;
+  containerSize: DetailModalContainerSize | null;
+};
+
 export type DetailModalOptions = Partial<{
   modalWidth: number;
   modalHeight: number;
@@ -18,3 +23,8 @@ export function calculateDetailModalStyle(
   containerSize: DetailModalContainerSize,
   options?: DetailModalOptions
 ): DetailModalStyle;
+
+export function calculateAnchorLocation(
+  triggerElement: HTMLElement | null,
+  containerElement: HTMLElement | null
+): DetailModalAnchorResult;

@@ -1,5 +1,5 @@
 <template>
-  <section class="flex-col page-shell" aria-label="主页面" style="margin:0 auto;padding-top: 80px;height: calc(100vh - 80px);">
+  <section class="flex-col page-shell" aria-label="主页面">
     <div class="panel-card" style="position: relative;">
       <div class="main-tabbar">
         <div class="tab-group">
@@ -7,7 +7,7 @@
           <button class="tab-button" :class="{ active: activeTab === 'list' }" @click="setTab('list')">List</button>
         </div>
       </div>
-      <div v-if="activeTab === 'map'" class="map-card">
+      <div v-show="activeTab === 'map'" class="map-card">
         <div ref="mapFrameRef" class="map-frame">
           <div class="field-legend" aria-label="景点分类颜色图例">
             <div v-for="item in fieldLegend" :key="item.field" class="field-legend-item">
@@ -47,34 +47,15 @@
           />
         </div>
       </div>
-      <div v-else class="list-panel mt-24">
-        <div v-for="group in groupedPoints" :key="group.field" class="panel-card p-20 mb-16">
-          <div class="flex-row justify-between align-center mb-14">
-            <div>
-              <div class="group-tag" :style="{ backgroundColor: group.color }">{{ group.field }}</div>
-              <h3 class="section-title" style="margin: 8px 0 0;">{{ group.field }} 景点</h3>
-            </div>
-            <span>{{ group.points.length }} 个</span>
-          </div>
-          <div class="grid-list">
-            <article v-for="point in group.points" :key="point.id" class="info-card p-18">
-              <div class="flex-row justify-between align-start gap-12">
-                <div class="flex-row gap-12 align-start flex-1">
-                  <div class="point-id-badge" :style="{ backgroundColor: getFieldColor(point.field) }">{{ point.id }}</div>
-                  <div>
-                    <h4>{{ point.name }}</h4>
-                    <p>{{ point.description }}</p>
-                  </div>
-                </div>
-                <button class="button-primary" @click="addPoint(point.id)" :disabled="selectedIds.includes(point.id)">
-                  {{ selectedIds.includes(point.id) ? '已添加' : '加入游览' }}
-                </button>
-              </div>
-              <div class="mt-12 text-muted">推荐时长：{{ point.cost }}</div>
-            </article>
-          </div>
-        </div>
-      </div>
+      <AttractionListView
+        class="list-view-host"
+        :class="{ 'list-view-host--hidden': activeTab !== 'list' }"
+        :points="points"
+        :selected-ids="selectedIds"
+        :field-color-map="fieldColorMap"
+        :fixed-fields="fixedFields"
+        @add="addPoint"
+      />
     </div>
 
     <div class="selected-popup" :class="{ collapsed: !selectedPopupOpen }">
@@ -105,6 +86,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import AttractionListView from '../components/AttractionListView.vue';
 import AttractionDetailModal from '../components/AttractionDetailModal.vue';
 import { useTourStore } from '../composables/useTourStore';
 import { calculateDetailModalStyle } from '../utils/common.js';
@@ -126,10 +108,22 @@ let mapFrameResizeObserver: ResizeObserver | null = null;
 
 // 按 field 定义颜色
 const fieldColorMap: Record<string, string> = {
-  '山景区': '#F59E0B',
-  '市集区': '#10B981',
-  '湖区': '#3B82F6'
+  '魔法森林': '#10B981',
+  '尺木小镇': '#8B5A2B',
+  '尖叫小镇': '#1E2A9B',
+  '小勇士的冒险亲子乐园': '#1E2A9B',
+  '冒险者俱乐部': '#FF8A00',
+  '萌宠乐园': '#7A7A7A'
 };
+
+const fixedFields = [
+  '魔法森林',
+  '尺木小镇',
+  '尖叫小镇',
+  '小勇士的冒险亲子乐园',
+  '冒险者俱乐部',
+  '萌宠乐园',
+];
 
 function getFieldColor(field: string): string {
   return fieldColorMap[field] || '#64748B';
@@ -180,13 +174,12 @@ const detailModalStyle = computed<Record<string, string>>(() => {
   return calculateDetailModalStyle(selectedPoint.value.location, mapFrameSize.value);
 });
 
-const fieldLegend = computed(() => {
-  const fields = new Set(points.value.map((point) => point.field).filter(Boolean));
-  return Array.from(fields).map((field) => ({
+const fieldLegend = computed(() =>
+  fixedFields.map((field) => ({
     field,
     color: getFieldColor(field),
-  }));
-});
+  })),
+);
 
 function setTab(tab: 'map' | 'list') {
   tour.setTab(tab);
@@ -203,7 +196,7 @@ function removePoint(id: number) {
   tour.removePoint(id);
 }
 
-function generateTour() {
+async function generateTour() {
   if (selectedPoints.value.length === 0) {
     return;
   }
@@ -218,19 +211,6 @@ function selectPoint(id: number) {
   selectedPointId.value = selectedPointId.value === id ? null : id;
 }
 
-const groupedPoints = computed(() => {
-  const groups = new Map<string, { color: string; points: typeof points.value }>();
-  points.value.forEach((point) => {
-    const existing = groups.get(point.field);
-    if (existing) {
-      existing.points.push(point);
-    } else {
-      groups.set(point.field, { color: getFieldColor(point.field), points: [point] });
-    }
-  });
-  return Array.from(groups.entries()).map(([field, group]) => ({ field, color: group.color, points: group.points }));
-});
-
 onMounted(async () => {
   await tour.loadTourPoints();
   await nextTick();
@@ -243,8 +223,8 @@ watch(activeTab, async (tab) => {
     return;
   }
 
-  await nextTick();
-  observeMapFrame();
+  // await nextTick();
+  // observeMapFrame();
 });
 
 onBeforeUnmount(() => {
@@ -283,10 +263,8 @@ onBeforeUnmount(() => {
   z-index: 15;
   display: flex;
   justify-content: center;
-}
 
-.tab {
-  &-group {
+  .tab-group {
     display: inline-flex;
     gap: 0;
     padding: 2px;
@@ -296,124 +274,119 @@ onBeforeUnmount(() => {
     overflow: hidden;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-  }
 
-  &-button {
-    min-width: 58px;
-    height: 42px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    color: rgba(63, 87, 67, 0.72);
-    font-size: 16px;
-    font-weight: 700;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    .tab-button {
+      min-width: 58px;
+      height: 42px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: rgba(63, 87, 67, 0.72);
+      font-size: 16px;
+      font-weight: 700;
+      transition: background-color 0.2s ease, color 0.2s ease;
 
-    &.active {
-      color: white;
-      background: #d3a820;
-      box-shadow: 0 1px 4px rgba(68, 52, 10, 0.18);
+      &.active {
+        color: white;
+        background: #d3a820;
+        box-shadow: 0 1px 4px rgba(68, 52, 10, 0.18);
+      }
     }
   }
 }
 
-.map {
-  &-card {
-    &.mt-24 {
-      margin-top: 0;
-    }
+
+.map-card {
+  &.mt-24 {
+    margin-top: 0;
   }
 
-  &-frame {
+  .map-frame {
     position: relative;
     min-height: 520px;
     height: 100%;
     border-radius: 26px;
-    overflow: hidden;
-  }
 
-  &-image {
-    position: relative;
-    width: 100%;
-  }
+    .field-legend {
+      position: absolute;
+      top: 5rem;
+      left: 16px;
+      z-index: 12;
+      display: grid;
+      gap: 6px;
+      min-width: 132px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.36);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
 
-  &-img {
-    display: block;
-    width: 100%;
-  }
+      .field-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #f8fafc;
+        font-size: 13px;
+        line-height: 1.2;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+        white-space: nowrap;
+      }
 
-  &-point {
-    position: absolute;
-    width: 24px;
-    height: 24px;
-    transform: translate(-50%, -50%);
-    display: grid;
-    place-items: center;
-    border: 2px solid rgba(255, 255, 255, 0.86);
-    border-radius: 999px;
-    color: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 1;
-    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.26);
-    z-index: 4;
-    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background-color 0.16s ease;
+      .field-legend-dot {
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(255, 255, 255, 0.9);
+        border-radius: 999px;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.28);
+        flex-shrink: 0;
+      }
 
-    &.selected {
-      color: #fff7ed;
-      border-color: rgba(255, 255, 255, 0.96);
-      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18), 0 10px 22px rgba(127, 29, 29, 0.26);
+      .field-legend-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
     }
 
-    &:hover,
-    &.active {
-      transform: translate(-50%, -50%) scale(1.18);
-      border-color: #fff;
-      box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.26), 0 10px 22px rgba(15, 23, 42, 0.28);
-    }
-  }
+    .map-image {
+      position: relative;
+      width: 100%;
 
-}
+      .map-img {
+        display: block;
+        width: 100%;
+      }
 
-.field {
-  &-legend {
-    position: absolute;
-    top: 16px;
-    left: 16px;
-    z-index: 12;
-    display: grid;
-    gap: 6px;
-    min-width: 132px;
-    padding: 10px 12px;
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    border-radius: 8px;
-    background: rgba(15, 23, 42, 0.36);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+      .map-point {
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        transform: translate(-50%, -50%);
+        display: grid;
+        place-items: center;
+        border: 2px solid rgba(255, 255, 255, 0.86);
+        border-radius: 999px;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1;
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.26);
+        z-index: 4;
+        transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background-color 0.16s ease;
 
-    &-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #f8fafc;
-      font-size: 13px;
-      line-height: 1.2;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
-      white-space: nowrap;
-    }
+        &.selected {
+          color: #fff7ed;
+          border-color: rgba(255, 255, 255, 0.96);
+          box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18), 0 10px 22px rgba(127, 29, 29, 0.26);
+        }
 
-    &-dot {
-      width: 12px;
-      height: 12px;
-      border: 2px solid rgba(255, 255, 255, 0.9);
-      border-radius: 999px;
-      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.28);
-      flex-shrink: 0;
-    }
-
-    &-name {
-      overflow: hidden;
-      text-overflow: ellipsis;
+        &:hover,
+        &.active {
+          transform: translate(-50%, -50%) scale(1.18);
+          border-color: #fff;
+          box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.26), 0 10px 22px rgba(15, 23, 42, 0.28);
+        }
+      }
     }
   }
 }
@@ -451,37 +424,53 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
-.selected {
-  &-popup {
-    position: fixed;
-    right: 22px;
-    bottom: 22px;
-    width: min(360px, calc(100% - 32px));
-    max-width: 360px;
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.92));
-    border: 1px solid rgba(96, 165, 250, 0.35);
-    border-radius: 24px;
-    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35), 0 10px 24px rgba(59, 130, 246, 0.08);
-    backdrop-filter: blur(20px);
-    z-index: 40;
-    overflow: hidden;
+.selected-popup {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  width: min(360px, calc(100% - 32px));
+  max-width: 360px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.92));
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  border-radius: 24px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35), 0 10px 24px rgba(59, 130, 246, 0.08);
+  backdrop-filter: blur(20px);
+  z-index: 40;
+  overflow: hidden;
 
-    &.collapsed {
-      width: min(220px, calc(100% - 32px));
+  &.collapsed {
+    width: min(220px, calc(100% - 32px));
+  }
+
+  .selected-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 18px;
+    background: rgba(30, 41, 59, 0.98);
+    border-bottom: 1px solid rgba(96, 165, 250, 0.18);
+
+    .popup-title {
+      margin: 0;
+      font-size: 0.98rem;
+      color: #e2e8f0;
+      font-weight: 700;
     }
 
-    &-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      padding: 16px 18px;
-      background: rgba(30, 41, 59, 0.98);
-      border-bottom: 1px solid rgba(96, 165, 250, 0.18);
+    .popup-subtitle {
+      margin: 4px 0 0;
+      font-size: 0.82rem;
+      color: #94a3b8;
     }
   }
 
-  &-list {
+  .popup-empty {
+    padding: 18px;
+    color: #94a3b8;
+  }
+
+  .selected-list {
     list-style: none;
     margin: 0;
     padding: 12px 18px 0;
@@ -489,67 +478,45 @@ onBeforeUnmount(() => {
     gap: 10px;
     max-height: 220px;
     overflow-y: auto;
+
+    .selected-item {
+      display: grid;
+      grid-template-columns: 24px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(96, 165, 250, 0.14);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 18px rgba(15, 23, 42, 0.18);
+
+      .item-index {
+        width: 26px;
+        height: 26px;
+        display: grid;
+        place-items: center;
+        border-radius: 10px;
+        background: rgba(59, 130, 246, 0.22);
+        color: #dbeafe;
+        font-size: 0.86rem;
+        font-weight: 700;
+      }
+
+      .item-name {
+        color: #e2e8f0;
+        font-size: 0.95rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
   }
 
-  &-item {
-    display: grid;
-    grid-template-columns: 24px 1fr auto;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    border-radius: 18px;
-    background: rgba(15, 23, 42, 0.92);
-    border: 1px solid rgba(96, 165, 250, 0.14);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 18px rgba(15, 23, 42, 0.18);
-  }
-}
-
-.popup {
-  &-title {
-    margin: 0;
-    font-size: 0.98rem;
-    color: #e2e8f0;
-    font-weight: 700;
-  }
-
-  &-subtitle {
-    margin: 4px 0 0;
-    font-size: 0.82rem;
-    color: #94a3b8;
-  }
-
-  &-empty {
-    padding: 18px;
-    color: #94a3b8;
-  }
-
-  &-footer {
+  .popup-footer {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
     margin-top: auto;
-  }
-}
-
-.item {
-  &-index {
-    width: 26px;
-    height: 26px;
-    display: grid;
-    place-items: center;
-    border-radius: 10px;
-    background: rgba(59, 130, 246, 0.22);
-    color: #dbeafe;
-    font-size: 0.86rem;
-    font-weight: 700;
-  }
-
-  &-name {
-    color: #e2e8f0;
-    font-size: 0.95rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 }
 
@@ -581,16 +548,14 @@ onBeforeUnmount(() => {
   font-size: 0.92rem;
 }
 
-.tour {
-  &-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: grid;
-    gap: 14px;
-  }
+.tour-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 14px;
 
-  &-item {
+  .tour-item {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -599,29 +564,29 @@ onBeforeUnmount(() => {
     border: 1px solid rgba(148, 163, 184, 0.12);
     border-radius: 20px;
 
-    &-left {
+    .tour-item-left {
       display: flex;
       gap: 14px;
       align-items: flex-start;
       min-width: 0;
     }
-  }
 
-  &-thumbnail {
-    width: 84px;
-    height: 84px;
-    border-radius: 18px;
-    background-color: rgba(148, 163, 184, 0.12);
-    background-position: center;
-    background-size: cover;
-    flex-shrink: 0;
-  }
+    .tour-thumbnail {
+      width: 84px;
+      height: 84px;
+      border-radius: 18px;
+      background-color: rgba(148, 163, 184, 0.12);
+      background-position: center;
+      background-size: cover;
+      flex-shrink: 0;
+    }
 
-  &-description {
-    margin: 8px 0 0;
-    color: #cbd5e1;
-    line-height: 1.5;
-    max-width: 420px;
+    .tour-description {
+      margin: 8px 0 0;
+      color: #cbd5e1;
+      line-height: 1.5;
+      max-width: 420px;
+    }
   }
 }
 
@@ -638,5 +603,14 @@ button {
     opacity: 0.5;
     cursor: not-allowed;
   }
+}
+
+.list-view-host--hidden {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 </style>

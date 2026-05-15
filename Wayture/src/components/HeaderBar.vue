@@ -3,12 +3,22 @@
     <div class="brand" @click="goHome">Wayture</div>
     <div class="header-actions">
       <template v-if="isAuthenticated">
-        <span class="user-badge">{{ account?.name || '游客' }}</span>
-        <button class="button-secondary" @click="openSettings" title="修改游览设置">⚙️</button>
-        <button class="button-secondary" @click="logout">退出</button>
+        <div class="profile-menu" aria-label="用户菜单">
+          <button class="avatar-button" type="button" :title="displayName">
+            <span class="avatar-text">{{ avatarText }}</span>
+          </button>
+          <div class="profile-dropdown">
+            <div class="profile-info">
+              <p class="profile-name">{{ displayName }}</p>
+              <p class="profile-username">{{ userPrincipalName }}</p>
+            </div>
+            <button class="dropdown-item" type="button" @click="openSettings">设置</button>
+            <button class="dropdown-item danger" type="button" @click="logout">退出</button>
+          </div>
+        </div>
       </template>
       <template v-else>
-        <button class="button-primary" @click="login">登录</button>
+        <button class="button-primary button-login" @click="login">Log in</button>
       </template>
     </div>
   </header>
@@ -28,6 +38,15 @@ onMounted(async () => {
 
 const isAuthenticated = computed(() => auth.isAuthenticated.value);
 const account = computed(() => auth.account.value);
+const displayName = computed(() => account.value?.name?.trim() || '游客');
+const userPrincipalName = computed(() => account.value?.username || 'unknown@user');
+const avatarText = computed(() => {
+  const source = displayName.value;
+  if (!source) {
+    return 'U';
+  }
+  return source.slice(0, 1).toUpperCase();
+});
 
 function login() {
   auth.login();
@@ -46,40 +65,154 @@ function openSettings() {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .header-bar {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 72px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 28px;
   background: rgba(15, 23, 42, 0.2);
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
   z-index: 20;
-}
 
-.brand {
-  font-size: 1.2rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: #eff6ff;
-  cursor: pointer;
-}
+  .brand {
+    position: absolute;
+    left: 2rem;
+    top: 1.2em;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #eff6ff;
+    cursor: pointer;
+    z-index: 9;
+  }
 
-.header-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-}
+  .header-actions {
+    position: absolute;
+    right: 4rem;
+    top: 1em;
+    z-index: 9;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
 
-.user-badge {
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #e2e8f0;
+    .profile-menu {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+
+      &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 100%;
+        height: 12px;
+      }
+
+      .avatar-button {
+        width: 2rem;
+        height: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        color: #f8fafc;
+        background-color: rgba(27, 168, 102, 1);
+        cursor: pointer;
+
+        .avatar-text {
+          font-size: 15px;
+          font-weight: 700;
+          line-height: 1;
+        }
+      }
+
+      .profile-dropdown {
+        position: absolute;
+        right: -3.8rem;
+        top: calc(100% + 8px);
+        min-width: 220px;
+        padding: 10px;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.95);
+        box-shadow: 0 14px 30px rgba(2, 6, 23, 0.4);
+        opacity: 0;
+        transform: translateY(-6px);
+        pointer-events: none;
+        transition: opacity 0.16s ease, transform 0.16s ease;
+        z-index: 30;
+
+        .profile-info {
+          padding: 6px 8px 10px;
+          border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+          margin-bottom: 6px;
+
+          .profile-name {
+            margin: 0;
+            color: #f8fafc;
+            font-size: 14px;
+            font-weight: 700;
+          }
+
+          .profile-username {
+            margin: 4px 0 0;
+            color: #94a3b8;
+            font-size: 12px;
+            word-break: break-all;
+          }
+        }
+
+        .dropdown-item {
+          width: 100%;
+          text-align: left;
+          border: none;
+          border-radius: 8px;
+          padding: 8px 10px;
+          background: transparent;
+          color: #e2e8f0;
+          cursor: pointer;
+          font-size: 13px;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.08);
+          }
+
+          &.danger {
+            color: #fca5a5;
+          }
+        }
+      }
+
+      &:hover {
+        .profile-dropdown {
+          opacity: 1;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
+      }
+    }
+
+    .button-login {
+      padding: 0.3rem 1.35rem;
+      border: 1.5px solid rgba(236, 243, 220, 0.9);
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(206, 216, 206, 0.95), rgba(191, 200, 191, 0.92));
+      color: #1f5d50;
+      font-size: 1.25rem;
+      font-weight: 500;
+      box-shadow: 0 2px 8px rgba(23, 52, 47, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
+      font-weight: 500;
+      &:hover {
+        filter: brightness(1.02);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(23, 52, 47, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.38);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+  }
 }
 </style>

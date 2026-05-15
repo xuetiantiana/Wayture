@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <HeaderBar />
+    <HeaderBar class="header-component" />
     <main>
       <router-view />
     </main>
@@ -44,3 +44,23 @@ onUnmounted(() => {
   window.removeEventListener('openTourGuide', openTourGuide);
 });
 </script>
+
+<style scoped>
+#app {
+  position: relative;
+  height: 100vh;
+}
+
+.header-component {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+main {
+  width: 100%;
+  height: 100vh;
+}
+</style>
