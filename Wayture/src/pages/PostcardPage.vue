@@ -1,5 +1,5 @@
 <template>
-  <section class="postcard-shell flex-row">
+  <section class="postcard-shell flex-row" style="padding-top: 4em;">
     <aside class="panel-card left-panel p-24">
       <div class="flex-row justify-between align-center mb-20">
         <div>

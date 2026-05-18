@@ -53,6 +53,7 @@ const userSettings = ref<UserSettings>(loadUserSettingsFromStorage());
 
 // 路线规划
 const routePlan = ref<Array<{ order: number; attraction: any; tips: string }>>([]);
+const routeSummary = ref('');
 const routeLoading = ref(false);
 
 // 回忆图册
@@ -74,7 +75,11 @@ export interface GallerySession {
 
 const gallerySessions = ref<GallerySession[]>([]);
 
-const selectedPoints = computed(() => points.value.filter((item) => selectedIds.value.includes(item.id)));
+const selectedPoints = computed(() =>
+  selectedIds.value
+    .map((id) => points.value.find((item) => item.id === id))
+    .filter((item): item is TourPoint => !!item),
+);
 
 function normalizeImageUrl(url: string): string {
   if (!url || url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
@@ -134,6 +139,7 @@ async function planRoute(): Promise<void> {
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
     routePlan.value = data.route || [];
+    routeSummary.value = data.summary || '';
 
     if (routePlan.value.length > 0) {
       const orderedIds = routePlan.value
@@ -147,6 +153,7 @@ async function planRoute(): Promise<void> {
   } catch (e) {
     console.warn('Failed to plan route, keeping original order:', e);
     routePlan.value = [];
+    routeSummary.value = '';
   } finally {
     routeLoading.value = false;
   }
@@ -180,6 +187,10 @@ function removePoint(id: number) {
   selectedIds.value = selectedIds.value.filter((item) => item !== id);
 }
 
+function setSelectedIds(ids: number[]) {
+  selectedIds.value = [...ids];
+}
+
 function setHighlight(id: number | null) {
   highlightId.value = id;
 }
@@ -205,6 +216,7 @@ export function useTourStore() {
     points,
     pointsLoading,
     routePlan,
+    routeSummary,
     routeLoading,
     gallerySessions,
     activeTab,
@@ -220,6 +232,7 @@ export function useTourStore() {
     setTab,
     addPoint,
     removePoint,
+    setSelectedIds,
     setHighlight,
     clearSelection,
     setUserSettings,

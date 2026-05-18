@@ -40,9 +40,12 @@ function saveUserSettingsToStorage(settings) {
 const userSettings = ref(loadUserSettingsFromStorage());
 // 路线规划
 const routePlan = ref([]);
+const routeSummary = ref('');
 const routeLoading = ref(false);
 const gallerySessions = ref([]);
-const selectedPoints = computed(() => points.value.filter((item) => selectedIds.value.includes(item.id)));
+const selectedPoints = computed(() => selectedIds.value
+    .map((id) => points.value.find((item) => item.id === id))
+    .filter((item) => !!item));
 function normalizeImageUrl(url) {
     if (!url || url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
         return url;
@@ -101,6 +104,7 @@ async function planRoute() {
             throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
         routePlan.value = data.route || [];
+        routeSummary.value = data.summary || '';
         if (routePlan.value.length > 0) {
             const orderedIds = routePlan.value
                 .sort((a, b) => a.order - b.order)
@@ -114,6 +118,7 @@ async function planRoute() {
     catch (e) {
         console.warn('Failed to plan route, keeping original order:', e);
         routePlan.value = [];
+        routeSummary.value = '';
     }
     finally {
         routeLoading.value = false;
@@ -144,6 +149,9 @@ function addPoint(id) {
 function removePoint(id) {
     selectedIds.value = selectedIds.value.filter((item) => item !== id);
 }
+function setSelectedIds(ids) {
+    selectedIds.value = [...ids];
+}
 function setHighlight(id) {
     highlightId.value = id;
 }
@@ -165,6 +173,7 @@ export function useTourStore() {
         points,
         pointsLoading,
         routePlan,
+        routeSummary,
         routeLoading,
         gallerySessions,
         activeTab,
@@ -180,6 +189,7 @@ export function useTourStore() {
         setTab,
         addPoint,
         removePoint,
+        setSelectedIds,
         setHighlight,
         clearSelection,
         setUserSettings,

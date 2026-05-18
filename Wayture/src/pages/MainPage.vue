@@ -1,5 +1,5 @@
 <template>
-  <section class="flex-col page-shell" aria-label="主页面">
+  <section class="flex-col page-shell" aria-label="主页面" style="">
     <div class="panel-card" style="position: relative;">
       <div class="main-tabbar">
         <div class="tab-group">
@@ -36,6 +36,9 @@
               {{ getPointOrder(point.id) }}
             </button>
           </div>
+          <ul class="tour-list-case">
+            <li v-for="item in tourCases" :key="item.name" @click="applyTourCase(item.ids)">{{ item.label }}</li>
+          </ul>
           <AttractionDetailModal
             v-if="selectedPoint"
             :point="selectedPoint"
@@ -64,28 +67,31 @@
           <p class="popup-title">当前游览列表</p>
           <p class="popup-subtitle">已选 {{ selectedPoints.length }} 项</p>
         </div>
-        <button class="button-secondary small" @click="toggleSelectedPopup">
+        <span class="toggle-icon" @click="toggleSelectedPopup">
           {{ selectedPopupOpen ? '收起' : '展开' }}
-        </button>
+        </span>
       </div>
       <template v-if="selectedPopupOpen">
-        <div v-if="selectedPoints.length === 0" class="popup-empty">暂无已选景点，点击地图或列表添加。</div>
-        <ul class="selected-list">
+        <div v-if="selectedPoints.length === 0" class="popup-empty">点击地图上的点位开始规划</div>
+        <ul v-else class="selected-list">
           <li v-for="(point, index) in selectedPoints" :key="point.id" class="selected-item">
             <span class="item-index">{{ index + 1 }}</span>
             <span class="item-name">{{ point.name }}</span>
-            <button class="button-secondary tiny" @click="removePoint(point.id)">删除</button>
+            <span class="delete-icon" aria-label="删除景点" @click="removePoint(point.id)">
+              <el-icon><CloseBold /></el-icon>
+            </span>
           </li>
         </ul>
-        <button class="button-primary full-width" :disabled="selectedPoints.length === 0" @click="generateTour">生成游览攻略</button>
+        <button class="button-primary full-width" :disabled="selectedPoints.length === 0" @click="generateTour">生成完整路线 →</button>
       </template>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { CloseBold } from '@element-plus/icons-vue';
 import AttractionListView from '../components/AttractionListView.vue';
 import AttractionDetailModal from '../components/AttractionDetailModal.vue';
 import { useTourStore } from '../composables/useTourStore';
@@ -103,8 +109,7 @@ const selectedPoint = computed(() => points.value.find((item) => item.id === sel
 const selectedPopupOpen = ref(true);
 const mapFrameRef = ref<HTMLElement | null>(null);
 const mapFrameSize = ref({ width: 0, height: 0 });
-
-let mapFrameResizeObserver: ResizeObserver | null = null;
+const detailModalStyle = ref<Record<string, string>>({});
 
 // 按 field 定义颜色
 const fieldColorMap: Record<string, string> = {
@@ -125,6 +130,24 @@ const fixedFields = [
   '萌宠乐园',
 ];
 
+const tourCases = [
+  {
+    name: 'parent-kid-day',
+    label: '🧸 Parent & Kid Day',
+    ids: [36, 35, 29, 37, 15],
+  },
+  {
+    name: 'thrill-seeker',
+    label: '🎢 Thrill Seeker',
+    ids: [11, 12, 17, 13, 16, 32],
+  },
+  {
+    name: 'relax-wander',
+    label: '🌿 Relax & Wander',
+    ids: [36, 35, 15, 9],
+  },
+];
+
 function getFieldColor(field: string): string {
   return fieldColorMap[field] || '#64748B';
 }
@@ -139,7 +162,7 @@ function isPointSelected(id: number): boolean {
 }
 
 function getPointMarkerColor(id: number, field: string): string {
-  return isPointSelected(id) ? '#ef4444' : getFieldColor(field);
+  return getFieldColor(field);
 }
 
 function updateMapFrameSize() {
@@ -153,26 +176,6 @@ function updateMapFrameSize() {
     height: rect.height,
   };
 }
-
-function observeMapFrame() {
-  mapFrameResizeObserver?.disconnect();
-  updateMapFrameSize();
-
-  if (!mapFrameRef.value || typeof ResizeObserver === 'undefined') {
-    return;
-  }
-
-  mapFrameResizeObserver = new ResizeObserver(updateMapFrameSize);
-  mapFrameResizeObserver.observe(mapFrameRef.value);
-}
-
-const detailModalStyle = computed<Record<string, string>>(() => {
-  if (!selectedPoint.value) {
-    return {};
-  }
-
-  return calculateDetailModalStyle(selectedPoint.value.location, mapFrameSize.value);
-});
 
 const fieldLegend = computed(() =>
   fixedFields.map((field) => ({
@@ -208,28 +211,33 @@ function toggleSelectedPopup() {
 }
 
 function selectPoint(id: number) {
-  selectedPointId.value = selectedPointId.value === id ? null : id;
+  if (selectedPointId.value === id) {
+    selectedPointId.value = null;
+    detailModalStyle.value = {};
+    return;
+  }
+
+  const point = points.value.find((item) => item.id === id);
+  if (!point) {
+    return;
+  }
+
+  updateMapFrameSize();
+  detailModalStyle.value = calculateDetailModalStyle(point.location, mapFrameSize.value);
+  selectedPointId.value = id;
+}
+
+function applyTourCase(ids: number[]) {
+  tour.setSelectedIds(ids);
+  selectedPointId.value = null;
+  detailModalStyle.value = {};
+  selectedPopupOpen.value = true;
 }
 
 onMounted(async () => {
   await tour.loadTourPoints();
   await nextTick();
-  observeMapFrame();
-  window.addEventListener('resize', updateMapFrameSize);
-});
-
-watch(activeTab, async (tab) => {
-  if (tab !== 'map') {
-    return;
-  }
-
-  // await nextTick();
-  // observeMapFrame();
-});
-
-onBeforeUnmount(() => {
-  mapFrameResizeObserver?.disconnect();
-  window.removeEventListener('resize', updateMapFrameSize);
+  updateMapFrameSize();
 });
 </script>
 
@@ -377,15 +385,37 @@ onBeforeUnmount(() => {
         &.selected {
           color: #fff7ed;
           border-color: rgba(255, 255, 255, 0.96);
-          box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18), 0 10px 22px rgba(127, 29, 29, 0.26);
+          transform: translate(-50%, -50%) scale(1.45);
+          // box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18), 0 10px 22px rgba(127, 29, 29, 0.26);
+          z-index: 5;
         }
 
         &:hover,
         &.active {
-          transform: translate(-50%, -50%) scale(1.18);
           border-color: #fff;
           box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.26), 0 10px 22px rgba(15, 23, 42, 0.28);
         }
+      }
+    }
+
+    .tour-list-case{
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 12;
+      right: 10px;
+
+      li {
+        list-style: none;
+        padding: 1em;
+        border-radius: 16px;
+        background: rgba(40, 40, 40, 1);
+        color: #f8fafc;
+        color: #fff;
+        cursor: pointer;
       }
     }
   }
@@ -426,14 +456,13 @@ onBeforeUnmount(() => {
 
 .selected-popup {
   position: fixed;
-  right: 22px;
-  bottom: 22px;
+  right: 10px;
+  bottom: 10px;
   width: min(360px, calc(100% - 32px));
   max-width: 360px;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.92));
+  background: rgba(0,0,0,0.42);
   border: 1px solid rgba(96, 165, 250, 0.35);
   border-radius: 24px;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35), 0 10px 24px rgba(59, 130, 246, 0.08);
   backdrop-filter: blur(20px);
   z-index: 40;
   overflow: hidden;
@@ -447,9 +476,15 @@ onBeforeUnmount(() => {
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    padding: 16px 18px;
-    background: rgba(30, 41, 59, 0.98);
-    border-bottom: 1px solid rgba(96, 165, 250, 0.18);
+    padding: 8px 18px;
+    .toggle-icon{
+      font-size: 12px;
+      cursor: pointer;
+      background-color: rgba(15, 23, 42, 0.8);
+      padding: .5em 1em;
+      border-radius: 1em;
+    }
+   
 
     .popup-title {
       margin: 0;
@@ -466,14 +501,15 @@ onBeforeUnmount(() => {
   }
 
   .popup-empty {
-    padding: 18px;
+    padding: 8px 16px;
     color: #94a3b8;
+    font-size: 14px;
   }
 
   .selected-list {
     list-style: none;
     margin: 0;
-    padding: 12px 18px 0;
+    padding: 9px 18px;
     display: grid;
     gap: 10px;
     max-height: 220px;
@@ -484,30 +520,32 @@ onBeforeUnmount(() => {
       grid-template-columns: 24px 1fr auto;
       align-items: center;
       gap: 10px;
-      padding: 12px 14px;
       border-radius: 18px;
-      background: rgba(15, 23, 42, 0.92);
-      border: 1px solid rgba(96, 165, 250, 0.14);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 18px rgba(15, 23, 42, 0.18);
-
+      font-size: 14px;
+      
       .item-index {
-        width: 26px;
-        height: 26px;
+        width: 22px;
+        height: 22px;
         display: grid;
         place-items: center;
-        border-radius: 10px;
-        background: rgba(59, 130, 246, 0.22);
+        border-radius: 100%;
+        background: rgba(230, 85, 44, 1);
         color: #dbeafe;
-        font-size: 0.86rem;
         font-weight: 700;
+        border: 2px solid rgba(255, 255, 255, 1);
+        box-sizing: border-box;
+        font-size: .8em;
       }
 
       .item-name {
         color: #e2e8f0;
-        font-size: 0.95rem;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+      }
+
+      .delete-icon{
+        cursor: pointer;
       }
     }
   }
@@ -517,6 +555,10 @@ onBeforeUnmount(() => {
     justify-content: flex-end;
     gap: 12px;
     margin-top: auto;
+  }
+
+  .button-primary.full-width {
+    background: linear-gradient(90deg, #ffc400 0%, #ff9f0a 100%);
   }
 }
 

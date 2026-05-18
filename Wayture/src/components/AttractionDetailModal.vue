@@ -1,7 +1,7 @@
 <template>
   <div class="attraction-modal" role="dialog" aria-modal="true" :aria-label="`${point.name} 景点详情`">
     <button class="close-button" type="button" aria-label="关闭景点详情" @click="$emit('close')">
-      ×
+      <el-icon><CloseBold /></el-icon>
     </button>
 
     <div class="modal-body">
@@ -24,7 +24,7 @@
       <div class="meta-row">
         <div>
           
-          <h3>{{ point.name }}<div class="small-tag" :style="{ backgroundColor: tagBackground }">{{ point.field }}</div></h3>
+          <h3>{{ point.name }}&nbsp;<div class="small-tag" :style="{ backgroundColor: tagBackground }">{{ point.field }}</div></h3>
         </div>
         <span class="duration">建议游玩时长：<span>{{ point.cost }}</span></span>
       </div>
@@ -48,6 +48,7 @@
 import { computed } from 'vue';
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import { Pagination } from 'swiper/modules';
+import { CloseBold } from '@element-plus/icons-vue';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import type { TourPointData } from '../data/tourPoints';
@@ -83,41 +84,41 @@ const detailTags = computed(() => {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: min(480px, calc(100% - 48px));
-  padding-top: 20px;
-  max-height: 90vh;
-  overflow: visible;
-  z-index: 99;
+  width: min(520px, calc(100% - 48px));
+  padding-top: 40px;
+  max-height: 95vh;
+  overflow: auto;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
 
   .close-button {
     position: absolute;
-    top: -14px;
-    right: -4px;
+    top: 0px;
+    right: 0px;
     width: 32px;
     height: 32px;
     border: none;
     padding: 0;
     border-radius: 8px;
-    color: rgba(255, 247, 232, 0.9);
-    background: rgba(40, 36, 30, 0.92);
-    border: 1px solid rgba(217, 184, 106, 0.3);
+    background: rgba(31, 31, 31, 0.4);
     font-size: 22px;
     line-height: 1;
     z-index: 11;
     display: grid;
     place-items: center;
+
+    .el-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
   }
 
   .modal-body {
     overflow-y: auto;
-    max-height: 90vh;
-    min-height: 0;
-    background: rgba(29, 26, 24, 0.96);
-    border: 1px solid rgba(217, 184, 106, 0.22);
-    border-radius: 0;
-    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+    background: rgba(31, 31, 31, 1);
+    border-radius: 16px;
     backdrop-filter: blur(12px);
     padding: 18px 18px 0;
   }
@@ -138,7 +139,7 @@ const detailTags = computed(() => {
     }
 
     .hero-image {
-      aspect-ratio: 1.48;
+      aspect-ratio: 1.7;
       background-color: #24303d;
       background-position: center;
       background-repeat: no-repeat;
@@ -204,23 +205,6 @@ const detailTags = computed(() => {
         font-size: 1rem;
         line-height: 1.8;
         white-space: pre-line;
-      }
-    }
-
-    .tag-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-
-      .pill-tag {
-        display: inline-flex;
-        align-items: center;
-        min-height: 34px;
-        padding: 0 14px;
-        border-radius: 10px;
-        background: rgba(103, 79, 26, 0.62);
-        color: #f5e8c8;
-        font-size: 0.9rem;
       }
     }
 

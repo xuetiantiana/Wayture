@@ -81,7 +81,7 @@ function openSettings() {
     top: 1.2em;
     font-size: 1.2rem;
     font-weight: 700;
-    color: #eff6ff;
+    color: rgba(198, 185, 153, 1);
     cursor: pointer;
     z-index: 9;
   }
