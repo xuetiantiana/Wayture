@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHashHistory } from 'vue-router';
 import HomePage from '../pages/HomePage.vue';
 import MainPage from '../pages/MainPage.vue';
 import TourDetailsPage from '../pages/TourDetailsPage.vue';
@@ -15,7 +15,7 @@ const routes = [
     { path: '/memories-gallery', name: 'MemoriesGallery', component: MemoriesGalleryPage, meta: { requiresAuth: true } }
 ];
 const router = createRouter({
-    history: createWebHistory(),
+    history: createWebHashHistory(import.meta.env.BASE_URL),
     routes
 });
 let authInitialized = false;

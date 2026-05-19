@@ -1,5 +1,5 @@
 <template>
-  <section class="gallery-page flex-row">
+  <section class="gallery-page flex-row" style="padding-top: 5em;">
     <aside class="panel-card p-24 session-sidebar">
       <h2 class="section-title">回忆图册</h2>
       <p class="subtitle">选择一次回忆查看详情。</p>

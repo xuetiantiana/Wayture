@@ -1,14 +1,22 @@
-import { PublicClientApplication } from '@azure/msal-browser';
+import { PublicClientApplication, ResponseMode } from '@azure/msal-browser';
 import { ref } from 'vue';
+const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const redirectUri = isLocalhost
+    ? `${window.location.origin}`
+    : `${window.location.origin}/Wayture/`;
 const msalConfig = {
     auth: {
-        clientId: 'cedddd29-c747-4e81-82ab-d46ef4cf3c66',
+        clientId: 'f120c81b-70e1-4da9-82f2-ac0278329dda',
         authority: 'https://login.microsoftonline.com/common',
-        redirectUri: window.location.origin
+        redirectUri,
+        OIDCOptions: {
+            responseMode: ResponseMode.QUERY,
+        },
     }
 };
 const loginRequest = {
-    scopes: ['openid', 'profile']
+    scopes: ['openid', 'profile'],
+    redirectUri
 };
 const msalInstance = new PublicClientApplication(msalConfig);
 const account = ref(null);
