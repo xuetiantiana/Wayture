@@ -1,10 +1,11 @@
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useAuth } from './useAuth';
 const apiBase = import.meta.env.VITE_API_BASE_URL || '';
 const mapImageUrl = `${apiBase}/static/map.jpg`;
-const userSettingsStorageKey = 'wayture:userSettings';
+const userSettingsStorageKeyPrefix = 'wayture:userSettings';
 const auth = useAuth();
 const currentUsername = computed(() => auth.account.value?.name || auth.account.value?.username || 'guest');
+const userSettingsStorageKey = computed(() => `${userSettingsStorageKeyPrefix}:${encodeURIComponent(currentUsername.value)}`);
 const points = ref([]);
 const pointsLoading = ref(false);
 let pointsLoadPromise = null;
@@ -13,7 +14,7 @@ const selectedIds = ref([]);
 const highlightId = ref(null);
 function loadUserSettingsFromStorage() {
     try {
-        const raw = localStorage.getItem(userSettingsStorageKey);
+        const raw = localStorage.getItem(userSettingsStorageKey.value);
         if (!raw) {
             return { nickname: '', tourStyle: '' };
         }
@@ -30,7 +31,7 @@ function loadUserSettingsFromStorage() {
 }
 function saveUserSettingsToStorage(settings) {
     try {
-        localStorage.setItem(userSettingsStorageKey, JSON.stringify(settings));
+        localStorage.setItem(userSettingsStorageKey.value, JSON.stringify(settings));
     }
     catch (e) {
         console.warn('Failed to save user settings to localStorage:', e);
@@ -38,6 +39,9 @@ function saveUserSettingsToStorage(settings) {
 }
 // 用户设置
 const userSettings = ref(loadUserSettingsFromStorage());
+watch(currentUsername, () => {
+    userSettings.value = loadUserSettingsFromStorage();
+});
 // 路线规划
 const routePlan = ref([]);
 const routeSummary = ref('');
