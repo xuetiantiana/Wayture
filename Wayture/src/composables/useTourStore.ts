@@ -9,7 +9,7 @@ type UserSettings = {
 };
 
 const apiBase = import.meta.env.VITE_API_BASE_URL || '';
-const mapImageUrl = `${apiBase}/static/map.png`;
+const mapImageUrl = `${apiBase}/static/map.jpg`;
 const userSettingsStorageKey = 'wayture:userSettings';
 
 const auth = useAuth();

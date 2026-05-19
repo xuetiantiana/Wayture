@@ -80,7 +80,7 @@ const detailTags = computed(() => {
 
 <style scoped lang="scss">
 .attraction-modal {
-  position: absolute;
+  position: fixed;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
@@ -125,8 +125,15 @@ const detailTags = computed(() => {
 
   .image-shell {
     .hero-swiper {
+      width: 100%;
+      aspect-ratio: 1.7;
       border-radius: 16px;
       overflow: hidden;
+
+      :global(.swiper-wrapper),
+      :global(.swiper-slide) {
+        height: 100%;
+      }
 
       :global(.swiper-pagination-bullet) {
         background: rgba(255, 244, 233, 0.72);
@@ -139,14 +146,15 @@ const detailTags = computed(() => {
     }
 
     .hero-image {
-      aspect-ratio: 1.7;
+      width: 100%;
+      height: 100%;
       background-color: #24303d;
       background-position: center;
       background-repeat: no-repeat;
       background-size: cover;
-      width: 100%;
 
       &--placeholder {
+        aspect-ratio: 1.7;
         background: linear-gradient(180deg, rgba(65, 54, 24, 0.55), rgba(23, 23, 23, 0.88));
       }
     }
@@ -211,12 +219,12 @@ const detailTags = computed(() => {
     .cta-button {
       margin-top: auto;
       width: 100%;
-      min-height: 56px;
+      height: 2.4em;
       border: none;
       border-radius: 14px;
       background: linear-gradient(180deg, #ffbc1e 0%, #f5a400 100%);
       color: #fff9eb;
-      font-size: 1.25rem;
+      font-size: 1.125rem;
       font-weight: 700;
       box-shadow: 0 12px 24px rgba(168, 104, 5, 0.3);
 

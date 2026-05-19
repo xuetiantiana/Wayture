@@ -1,5 +1,5 @@
 <template>
-  <section class="flex-col page-shell" aria-label="主页面" style="">
+  <section class="flex-col page-shell" aria-label="主页面">
     <div class="panel-card" style="position: relative;">
       <div class="main-tabbar">
         <div class="tab-group">
@@ -8,7 +8,7 @@
         </div>
       </div>
       <div v-show="activeTab === 'map'" class="map-card">
-        <div ref="mapFrameRef" class="map-frame">
+        <div class="map-container">
           <div class="field-legend" aria-label="景点分类颜色图例">
             <div v-for="item in fieldLegend" :key="item.field" class="field-legend-item">
               <span class="field-legend-dot" :style="{ backgroundColor: item.color }"></span>
@@ -20,20 +20,27 @@
             <button
               v-for="point in points"
               :key="point.id"
-              class="map-point"
+              class="map-point-wrap"
               :class="{
                 active: point.id === selectedPointId,
                 selected: isPointSelected(point.id)
               }"
               :style="{
                 left: `${point.location[0]}%`,
-                top: `${point.location[1]}%`,
-                backgroundColor: getPointMarkerColor(point.id, point.field)
+                top: `${point.location[1]}%`
               }"
               type="button"
-              @click="selectPoint(point.id)"
+              @click="selectPoint(point.id, $event)"
             >
-              {{ getPointOrder(point.id) }}
+              <span class="map-point-label">{{ point.name }}</span>
+              <span
+                class="map-point"
+                :style="{
+                  backgroundColor: getPointMarkerColor(point.id, point.field)
+                }"
+              >
+                <span class="map-point-order">{{ getPointOrder(point.id) }}</span>
+              </span>
             </button>
           </div>
           <ul class="tour-list-case">
@@ -45,7 +52,7 @@
             :is-added="selectedIds.includes(selectedPoint.id)"
             :accent-color="getFieldColor(selectedPoint.field)"
             :style="detailModalStyle"
-            @close="selectedPointId = null"
+            @close="closeSelectedPoint"
             @add="addPoint"
           />
         </div>
@@ -89,13 +96,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { CloseBold } from '@element-plus/icons-vue';
 import AttractionListView from '../components/AttractionListView.vue';
 import AttractionDetailModal from '../components/AttractionDetailModal.vue';
 import { useTourStore } from '../composables/useTourStore';
-import { calculateDetailModalStyle } from '../utils/common.js';
+import { calculateTriggerModalStyle } from '../utils/common.js';
 
 const router = useRouter();
 const tour = useTourStore();
@@ -108,22 +115,21 @@ const selectedPointId = ref<number | null>(null);
 const selectedPoint = computed(() => points.value.find((item) => item.id === selectedPointId.value) ?? null);
 const selectedPopupOpen = ref(true);
 const mapFrameRef = ref<HTMLElement | null>(null);
-const mapFrameSize = ref({ width: 0, height: 0 });
 const detailModalStyle = ref<Record<string, string>>({});
 
 // 按 field 定义颜色
 const fieldColorMap: Record<string, string> = {
-  '魔法森林': '#10B981',
-  '尺木小镇': '#8B5A2B',
-  '尖叫小镇': '#1E2A9B',
-  '小勇士的冒险亲子乐园': '#1E2A9B',
-  '冒险者俱乐部': '#FF8A00',
-  '萌宠乐园': '#7A7A7A'
+  'MSRA专区':"rgba(168, 27, 128, 1)",
+  '魔法森林': 'rgba(27, 168, 102, 1)',
+  '尖叫小镇': 'rgba(23, 37, 126, 1)',
+  '小勇士的冒险亲子乐园': 'rgba(10, 151, 229, 1)',
+  '冒险者俱乐部': 'rgba(247, 143, 8, 1)',
+  '萌宠乐园': 'rgba(49, 120, 35, 1)'
 };
 
 const fixedFields = [
+  'MSRA专区',
   '魔法森林',
-  '尺木小镇',
   '尖叫小镇',
   '小勇士的冒险亲子乐园',
   '冒险者俱乐部',
@@ -134,7 +140,7 @@ const tourCases = [
   {
     name: 'parent-kid-day',
     label: '🧸 Parent & Kid Day',
-    ids: [36, 35, 29, 37, 15],
+    ids: [21, 22, 25, 35, 29, 24,26,1,2,3,4,5,7,8],
   },
   {
     name: 'thrill-seeker',
@@ -144,7 +150,7 @@ const tourCases = [
   {
     name: 'relax-wander',
     label: '🌿 Relax & Wander',
-    ids: [36, 35, 15, 9],
+    ids: [32, 25, 35, 15,9],
   },
 ];
 
@@ -165,18 +171,6 @@ function getPointMarkerColor(id: number, field: string): string {
   return getFieldColor(field);
 }
 
-function updateMapFrameSize() {
-  if (!mapFrameRef.value) {
-    return;
-  }
-
-  const rect = mapFrameRef.value.getBoundingClientRect();
-  mapFrameSize.value = {
-    width: rect.width,
-    height: rect.height,
-  };
-}
-
 const fieldLegend = computed(() =>
   fixedFields.map((field) => ({
     field,
@@ -191,7 +185,7 @@ function setTab(tab: 'map' | 'list') {
 function addPoint(id: number) {
   tour.addPoint(id);
   if (selectedPointId.value === id) {
-    selectedPointId.value = null;
+    closeSelectedPoint();
   }
 }
 
@@ -210,10 +204,14 @@ function toggleSelectedPopup() {
   selectedPopupOpen.value = !selectedPopupOpen.value;
 }
 
-function selectPoint(id: number) {
+function closeSelectedPoint() {
+  selectedPointId.value = null;
+  detailModalStyle.value = {};
+}
+
+function selectPoint(id: number, event: MouseEvent) {
   if (selectedPointId.value === id) {
-    selectedPointId.value = null;
-    detailModalStyle.value = {};
+    closeSelectedPoint();
     return;
   }
 
@@ -222,22 +220,20 @@ function selectPoint(id: number) {
     return;
   }
 
-  updateMapFrameSize();
-  detailModalStyle.value = calculateDetailModalStyle(point.location, mapFrameSize.value);
+  const triggerElement = event.currentTarget as HTMLElement;
+  const pointElement = triggerElement.querySelector('.map-point') as HTMLElement | null;
+  detailModalStyle.value = calculateTriggerModalStyle(pointElement ?? triggerElement);
   selectedPointId.value = id;
 }
 
 function applyTourCase(ids: number[]) {
   tour.setSelectedIds(ids);
-  selectedPointId.value = null;
-  detailModalStyle.value = {};
+  closeSelectedPoint();
   selectedPopupOpen.value = true;
 }
 
 onMounted(async () => {
   await tour.loadTourPoints();
-  await nextTick();
-  updateMapFrameSize();
 });
 </script>
 
@@ -265,7 +261,7 @@ onMounted(async () => {
 
 .main-tabbar {
   position: absolute;
-  top: 12px;
+  top: 22px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 15;
@@ -288,16 +284,15 @@ onMounted(async () => {
       height: 42px;
       border: none;
       border-radius: 6px;
-      background: transparent;
-      color: rgba(63, 87, 67, 0.72);
-      font-size: 16px;
+      background: rgba(245, 245, 245, 1);
+      color: rgba(23, 68, 58, 1);
+      font-size: 18px;
       font-weight: 700;
       transition: background-color 0.2s ease, color 0.2s ease;
 
       &.active {
         color: white;
-        background: #d3a820;
-        box-shadow: 0 1px 4px rgba(68, 52, 10, 0.18);
+        background: rgba(255, 183, 0, 1);
       }
     }
   }
@@ -309,7 +304,7 @@ onMounted(async () => {
     margin-top: 0;
   }
 
-  .map-frame {
+  .map-container {
     position: relative;
     min-height: 520px;
     height: 100%;
@@ -359,42 +354,81 @@ onMounted(async () => {
     .map-image {
       position: relative;
       width: 100%;
+      height: 100vh;
+      overflow: auto;
 
       .map-img {
         display: block;
         width: 100%;
       }
 
-      .map-point {
+      .map-point-wrap {
         position: absolute;
-        width: 24px;
-        height: 24px;
-        transform: translate(-50%, -50%);
-        display: grid;
-        place-items: center;
-        border: 2px solid rgba(255, 255, 255, 0.86);
-        border-radius: 999px;
-        color: #fff;
-        font-size: 11px;
-        font-weight: 700;
-        line-height: 1;
-        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.26);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        width: max-content;
+        height: auto;
+        transform: translate(-50%, calc(-100% + 8px));
+        padding: 0;
+        border: none;
+        background: transparent;
+        cursor: pointer;
         z-index: 4;
-        transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background-color 0.16s ease;
 
         &.selected {
-          color: #fff7ed;
-          border-color: rgba(255, 255, 255, 0.96);
-          transform: translate(-50%, -50%) scale(1.45);
-          // box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18), 0 10px 22px rgba(127, 29, 29, 0.26);
           z-index: 5;
         }
 
         &:hover,
         &.active {
-          border-color: #fff;
-          box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.26), 0 10px 22px rgba(15, 23, 42, 0.28);
+          .map-point {
+            border-color: #fff;
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.26), 0 10px 22px rgba(15, 23, 42, 0.28);
+          }
         }
+      }
+
+      .map-point {
+        width: 16px;
+        height: 16px;
+        display: grid;
+        place-items: center;
+        border: 2px solid rgba(255, 255, 255, 0.86);
+        border-radius: 999px;
+        color: #fff;
+        font-size: 7px;
+        font-weight: 700;
+        line-height: 1;
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.26);
+        transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background-color 0.16s ease;
+
+        .map-point-order {
+          position: relative;
+          z-index: 1;
+        }
+
+      }
+
+      .map-point-wrap.selected {
+        .map-point {
+          color: #fff7ed;
+          border-color: rgba(255, 255, 255, 0.96);
+          transform: scale(2);
+          // box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18), 0 10px 22px rgba(127, 29, 29, 0.26);
+        }
+      }
+
+      .map-point-label {
+        padding: 4px;
+        border-radius: 8px;
+        background: rgba(13, 13, 13, 0.4);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.2;
+        white-space: nowrap;
       }
     }
 

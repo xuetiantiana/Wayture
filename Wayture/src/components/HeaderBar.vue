@@ -1,6 +1,6 @@
 <template>
   <header class="header-bar">
-    <div class="brand" @click="goHome">Wayture</div>
+    <div class="brand" @click="goHome">Microsoft Research</div>
     <div class="header-actions">
       <template v-if="isAuthenticated">
         <div class="profile-menu" aria-label="用户菜单">
@@ -81,7 +81,6 @@ function openSettings() {
     top: 1.2em;
     font-size: 1.2rem;
     font-weight: 700;
-    color: rgba(198, 185, 153, 1);
     cursor: pointer;
     z-index: 9;
   }

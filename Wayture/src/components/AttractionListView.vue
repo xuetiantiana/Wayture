@@ -1,5 +1,5 @@
 <template>
-  <div ref="listViewRef" class="list-view">
+  <div class="list-view" style="background: #fff;">
     <div class="field-filter-bar">
       <button
         v-for="f in fieldFilters"
@@ -62,7 +62,7 @@ import { LazyImg, Waterfall } from 'vue-waterfall-plugin-next';
 import 'vue-waterfall-plugin-next/dist/style.css';
 import checkIcon from '../assets/images/check-icon.png';
 import type { TourPointData } from '../data/tourPoints';
-import { calculateDetailModalStyle } from '../utils/common.js';
+import { calculateTriggerModalStyle } from '../utils/common.js';
 import AttractionDetailModal from './AttractionDetailModal.vue';
 
 const props = defineProps<{
@@ -78,9 +78,7 @@ const emit = defineEmits<{
 
 const selectedField = ref<string | null>(null);
 const selectedPointId = ref<number | null>(null);
-const listViewRef = ref<HTMLElement | null>(null);
-const listViewSize = ref({ width: 0, height: 0 });
-const detailAnchorLocation = ref<[number, number] | null>(null);
+const detailModalStyle = ref<Record<string, string>>({});
 
 const waterfallBreakpoints = {
   99999: { rowPerView: 5 },
@@ -120,67 +118,15 @@ const waterfallPoints = computed(() =>
 
 const selectedPoint = computed(() => props.points.find((item) => item.id === selectedPointId.value) ?? null);
 
-const detailModalStyle = computed<Record<string, string>>(() => {
-  if (!selectedPoint.value || !detailAnchorLocation.value) {
-    return {};
-  }
-  return calculateDetailModalStyle(detailAnchorLocation.value, listViewSize.value);
-});
-
-function getAnchorLocation(triggerElement: HTMLElement | null, containerElement: HTMLElement | null) {
-  if (!triggerElement || !containerElement) {
-    return {
-      anchorLocation: null as [number, number] | null,
-      containerSize: null as { width: number; height: number } | null,
-    };
-  }
-
-  const containerRect = containerElement.getBoundingClientRect();
-  const triggerRect = triggerElement.getBoundingClientRect();
-  const anchorX = triggerRect.left + triggerRect.width / 2 - containerRect.left;
-  const anchorY = triggerRect.top + triggerRect.height / 2 - containerRect.top;
-
-  if (!containerRect.width || !containerRect.height) {
-    return {
-      anchorLocation: null as [number, number] | null,
-      containerSize: {
-        width: containerRect.width,
-        height: containerRect.height,
-      },
-    };
-  }
-
-  return {
-    anchorLocation: [
-      (anchorX / containerRect.width) * 100,
-      (anchorY / containerRect.height) * 100,
-    ] as [number, number],
-    containerSize: {
-      width: containerRect.width,
-      height: containerRect.height,
-    },
-  };
-}
-
 function showDetail(id: number, event: MouseEvent) {
-  const button = event.currentTarget as HTMLElement | null;
-  const container = listViewRef.value;
-  const { anchorLocation, containerSize } = getAnchorLocation(button, container);
-
-  if (!anchorLocation || !containerSize) {
-    selectedPointId.value = id;
-    detailAnchorLocation.value = null;
-    return;
-  }
-
-  listViewSize.value = containerSize;
-  detailAnchorLocation.value = anchorLocation;
+  event.stopPropagation();
+  detailModalStyle.value = calculateTriggerModalStyle(event.currentTarget as HTMLElement);
   selectedPointId.value = id;
 }
 
 function closeDetail() {
   selectedPointId.value = null;
-  detailAnchorLocation.value = null;
+  detailModalStyle.value = {};
 }
 
 function handleAdd(id: number) {
@@ -220,14 +166,14 @@ function handleAdd(id: number) {
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.55);
   color: #e2e8f0;
-  font-size: 13px;
+  font-size: 16px;
   cursor: pointer;
   white-space: nowrap;
 }
 
 .field-chip.active {
-  border-color: #d3a820;
-  background: rgba(211, 168, 32, 0.28);
+  border-color: rgb(255, 183, 0);
+  background: rgb(255, 183, 0);
   color: #fff;
 }
 

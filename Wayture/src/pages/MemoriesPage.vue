@@ -1,5 +1,5 @@
 <template>
-  <section class="memories-page" aria-label="回忆页面">
+  <section class="memories-page" aria-label="回忆页面" style="padding-top: 5em;background-color: #fff;height: 100%;box-sizing: border-box;">
     <div class="panel-card p-24">
       <div class="flex-row align-center justify-between wrap">
         <div>
@@ -234,7 +234,7 @@ onMounted(() => {
   align-items: center;
   padding: 48px 0;
   gap: 14px;
-  color: #94a3b8;
+  /* color: #94a3b8; */
 }
 
 .spinner {
@@ -288,7 +288,7 @@ onMounted(() => {
 
 .upload-content {
   text-align: center;
-  color: #94a3b8;
+  /* color: #94a3b8; */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -298,7 +298,7 @@ onMounted(() => {
 .upload-icon {
   font-size: 3rem;
   font-weight: 300;
-  color: #64748b;
+  /* color: #64748b; */
   line-height: 1;
 }
 
@@ -381,7 +381,7 @@ onMounted(() => {
 }
 
 .select-count {
-  color: #94a3b8;
+  /* color: #94a3b8; */
   font-size: 0.95rem;
 }
 
@@ -392,7 +392,7 @@ onMounted(() => {
 
 .hint-text {
   margin: 16px 0 0;
-  color: #94a3b8;
+  /* color: #94a3b8; */
   font-size: 0.9rem;
   text-align: center;
 }

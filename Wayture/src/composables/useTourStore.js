@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue';
 import { useAuth } from './useAuth';
 const apiBase = import.meta.env.VITE_API_BASE_URL || '';
-const mapImageUrl = `${apiBase}/static/map.png`;
+const mapImageUrl = `${apiBase}/static/map.jpg`;
 const userSettingsStorageKey = 'wayture:userSettings';
 const auth = useAuth();
 const currentUsername = computed(() => auth.account.value?.name || auth.account.value?.username || 'guest');

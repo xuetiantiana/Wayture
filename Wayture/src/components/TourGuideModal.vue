@@ -36,16 +36,15 @@
           <div class="modal-body">
             <div class="step-content">
               <div class="style-options">
-                <button
+                <div
                   v-for="style in tourStyles"
                   :key="style.value"
                   :class="['style-btn', { active: selectedStyle === style.value }]"
                   @click="selectedStyle = style.value"
                 >
-                  <span class="style-icon">{{ style.icon }}</span>
-                  <span class="style-name">{{ style.name }}</span>
+                  <span class="style-name">{{ style.icon }}&nbsp;{{ style.name }}</span>
                   <span class="style-desc">{{ style.desc }}</span>
-                </button>
+                </div>
               </div>
             </div>
           </div>
@@ -79,10 +78,11 @@ const nickname = ref('');
 const selectedStyle = ref('');
 
 const tourStyles = [
-  { value: 'family', name: '全家游', icon: '👨‍👩‍👧‍👦', desc: '适合家庭出游，轻松愉快' },
-  { value: 'solo', name: '单身游', icon: '🧳', desc: '独自旅行，自由自在' },
-  { value: 'couple', name: '情侣游', icon: '💑', desc: '浪漫二人世界' },
-  { value: 'relaxed', name: '轻松游', icon: '🏖️', desc: '悠闲度假，享受生活' }
+  { value: 'Family Adventure', name: 'Family Adventure', icon: '👨‍👩‍👧', desc: '' },
+  { value: 'Couple Escape', name: 'Couple Escape', icon: '💕', desc: '' },
+  { value: 'Parent & Kid Day', name: 'Parent & Kid Day', icon: '🧸', desc: '' },
+  { value: 'Solo Journey', name: 'Solo Journey', icon: '🌿', desc: '' },
+  { value: 'Friends Trip', name: 'Friends Trip', icon: '🎉', desc: '' }
 ];
 
 const canProceed = computed(() => {
@@ -138,7 +138,7 @@ function closeOnOverlay() {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 :global(body:has(.modal-overlay)) {
   overflow: hidden;
 }
@@ -149,225 +149,236 @@ function closeOnOverlay() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  background: rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-}
 
-.modal-content {
-  position: relative;
-  width: 670px;
-  padding: 56px 40px;
-  background: #202020;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
-  overflow-y: auto;
-}
+  .modal-content {
+    position: relative;
+    width: 670px;
+    padding: 56px 40px;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    background: #202020;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
 
-.modal-header {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+    .close-btn {
+      position: absolute;
+      right: 20px;
+      top: 18px;
+      padding: 0 4px;
+      border: none;
+      border-radius: 8px;
+      background: none;
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 34px;
+      line-height: 1;
+      cursor: pointer;
+      transition: all 0.2s;
 
-.modal-header h3 {
-  margin: 0;
-  color: #f8fafc;
-  font-size: 40px;
-  line-height: 1.15;
-  font-weight: 800;
-  text-align: center;
-  font-weight: 600;
-}
+      &:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #f8fafc;
+      }
+    }
 
-.close-btn {
-  position: absolute;
-  right: 20px;
-  top: 18px;
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 34px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0 4px;
-  border-radius: 8px;
-  transition: all 0.2s;
-}
+    .modal-header {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
 
-.close-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #f8fafc;
-}
+      h3 {
+        margin: 0;
+        color: #f8fafc;
+        font-size: 40px;
+        line-height: 1.15;
+        font-weight: 600;
+        text-align: center;
+      }
+    }
 
-.modal-subtitle {
-  margin: 4px 0 0;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 24px;
-  line-height: 1.25;
-  text-align: center;
-}
+    .modal-subtitle {
+      margin: 4px 0 0;
+      color: rgba(255, 255, 255, 0.62);
+      font-size: 24px;
+      line-height: 1.25;
+      text-align: center;
+    }
 
-.modal-body {
-  margin-top: 43px;
-}
+    .modal-body {
+      margin-top: 43px;
 
-.step-content {
-  text-align: center;
-}
+      .step-content {
+        text-align: center;
 
-.nickname-input {
-  width: 100%;
-  height: 48px;
-  padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  color: #f8fafc;
-  font-size: 18px;
-  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
-}
+        .nickname-input {
+          width: 100%;
+          height: 48px;
+          padding: 0 14px;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.04);
+          color: #f8fafc;
+          font-size: 18px;
+          transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
 
-.nickname-input::placeholder {
-  color: rgba(255, 255, 255, 0.52);
-}
+          &::placeholder {
+            color: rgba(255, 255, 255, 0.52);
+          }
 
-.nickname-input:focus {
-  outline: none;
-  border-color: rgba(255, 181, 0, 0.72);
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 0 0 3px rgba(255, 181, 0, 0.12);
-}
+          &:focus {
+            outline: none;
+            border-color: rgba(255, 181, 0, 0.72);
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 0 0 3px rgba(255, 181, 0, 0.12);
+          }
+        }
 
-.style-options {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
+        .style-options {
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          gap: 6px;
 
-.style-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  color: #cbd5e1;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: center;
-}
+          .style-btn {
+            grid-column: span 2;
+            display: inline-flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            min-height: 65px;
+            padding: 0 5px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.04);
+            color: #cbd5e1;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
 
-.style-btn:hover {
-  border-color: rgba(255, 181, 0, 0.72);
-  background: rgba(255, 181, 0, 0.08);
-}
+            &:nth-child(4),
+            &:nth-child(5) {
+              grid-column: span 3;
+            }
 
-.style-btn.active {
-  border-color: rgba(255, 181, 0, 0.9);
-  background: rgba(255, 181, 0, 0.14);
-  color: #e2e8f0;
-}
+            &:hover {
+              border-color: rgba(255, 181, 0, 0.72);
+              background: rgba(255, 181, 0, 0.08);
+            }
 
-.style-icon {
-  font-size: 2rem;
-  margin-bottom: 8px;
-}
+            &.active {
+              border-color: rgba(255, 181, 0, 0.9);
+              background: rgba(255, 181, 0, 0.14);
+              color: #e2e8f0;
+            }
 
-.style-name {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
+            .style-icon {
+              font-size: 1.35rem;
+            }
 
-.style-desc {
-  font-size: 0.9rem;
-  opacity: 0.8;
-}
+            .style-name {
+              font-size: 1.125rem;
+              font-weight: 600;
+            }
 
-.modal-footer {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 39px;
-}
+            .style-desc {
+              display: none;
+            }
+          }
+        }
+      }
+    }
 
-.btn-secondary,
-.btn-primary {
-  height: 48px;
-  padding: 0 24px;
-  border-radius: 8px;
-  font-size: 20px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
+    .modal-footer {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 39px;
 
-.btn-secondary {
-  background: rgba(148, 163, 184, 0.2);
-  color: #cbd5e1;
-}
+      .btn-secondary,
+      .btn-primary {
+        height: 48px;
+        padding: 0 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 20px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
 
-.btn-secondary:hover {
-  background: rgba(148, 163, 184, 0.3);
-}
+      .btn-secondary {
+        background: rgba(148, 163, 184, 0.2);
+        color: #cbd5e1;
 
-.btn-primary {
-  flex: 1;
-  width: 100%;
-  background: #ffb300;
-  color: rgba(255, 255, 255, 0.92);
-}
+        &:hover {
+          background: rgba(148, 163, 184, 0.3);
+        }
+      }
 
-.btn-primary:hover:not(:disabled) {
-  background: #ffc01c;
-}
+      .btn-primary {
+        flex: 1;
+        width: 100%;
+        background: #ffb300;
+        color: rgba(255, 255, 255, 0.92);
 
-.btn-primary:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
+        &:hover:not(:disabled) {
+          background: #ffc01c;
+        }
+
+        &:disabled {
+          opacity: 0.65;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
 }
 
 @media (max-width: 640px) {
-  .style-options {
-    grid-template-columns: 1fr;
-  }
+  .modal-overlay {
+    .modal-content {
+      width: calc(100% - 32px);
+      height: auto;
+      min-height: 404px;
+      padding: 34px 20px;
 
-  .modal-content {
-    width: calc(100% - 32px);
-    height: auto;
-    min-height: 404px;
-    padding: 34px 20px;
-  }
+      .modal-header {
+        h3 {
+          font-size: 30px;
+        }
+      }
 
-  .modal-header h3 {
-    font-size: 30px;
-  }
+      .modal-subtitle {
+        font-size: 18px;
+      }
 
-  .modal-subtitle {
-    font-size: 18px;
-  }
+      .modal-body {
+        margin-top: 30px;
 
-  .modal-body {
-    margin-top: 30px;
-  }
+        .step-content {
+          .style-options {
+            grid-template-columns: 1fr;
+          }
+        }
+      }
 
-  .modal-footer {
-    flex-direction: column;
-    margin-top: 28px;
-  }
+      .modal-footer {
+        flex-direction: column;
+        margin-top: 28px;
 
-  .btn-secondary,
-  .btn-primary {
-    width: 100%;
+        .btn-secondary,
+        .btn-primary {
+          width: 100%;
+        }
+      }
+    }
   }
 }
 </style>

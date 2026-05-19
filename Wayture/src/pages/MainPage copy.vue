@@ -304,8 +304,8 @@ watch([selectedPointId, points], drawMap, { deep: true });
   height: 42px;
   border: none;
   border-radius: 6px;
-  background: transparent;
-  color: rgba(63, 87, 67, 0.72);
+  background: rgba(245, 245, 245, 1);
+  color: rgba(23, 68, 58, 1);
   font-size: 16px;
   font-weight: 700;
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -313,7 +313,7 @@ watch([selectedPointId, points], drawMap, { deep: true });
 
 .tab-button.active {
   color: white;
-  background: #d3a820;
+  background: rgba(255, 183, 0, 1);
   box-shadow: 0 1px 4px rgba(68, 52, 10, 0.18);
 }
 

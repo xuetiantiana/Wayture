@@ -1,30 +1,13 @@
-export type DetailModalStyle = Record<string, string>;
+export type TriggerModalStyle = Record<string, string>;
 
-export type DetailModalContainerSize = {
-  width: number;
-  height: number;
-};
-
-export type DetailModalAnchorResult = {
-  anchorLocation: [number, number] | null;
-  containerSize: DetailModalContainerSize | null;
-};
-
-export type DetailModalOptions = Partial<{
-  modalWidth: number;
-  modalHeight: number;
-  gap: number;
-  safeGap: number;
-  pointTopOffset: number;
+export type TriggerModalLayoutOptions = Partial<{
+	width: number;
+	height: number;
+	gap: number;
+	safeGap: number;
 }>;
 
-export function calculateDetailModalStyle(
-  pointLocation: [number, number],
-  containerSize: DetailModalContainerSize,
-  options?: DetailModalOptions
-): DetailModalStyle;
-
-export function calculateAnchorLocation(
-  triggerElement: HTMLElement | null,
-  containerElement: HTMLElement | null
-): DetailModalAnchorResult;
+export function calculateTriggerModalStyle(
+	triggerElement: HTMLElement,
+	options?: TriggerModalLayoutOptions
+): TriggerModalStyle;
