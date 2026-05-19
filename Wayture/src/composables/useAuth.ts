@@ -30,6 +30,19 @@ const clientInitialized = ref(false);
 
 let authPromise: Promise<void> | null = null;
 
+function cleanLogoutStateFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has('state') || params.has('code') || params.has('error')) {
+    return;
+  }
+
+  window.history.replaceState(
+    null,
+    document.title,
+    `${window.location.pathname}${window.location.hash}`,
+  );
+}
+
 async function ensureClientInitialized() {
   if (!clientInitialized.value) {
     await msalInstance.initialize();
@@ -54,6 +67,7 @@ async function initAuth() {
         }
       }
       isAuthenticated.value = !!account.value;
+      cleanLogoutStateFromUrl();
       initialized.value = true;
     })();
   }
@@ -67,7 +81,9 @@ async function login() {
 
 async function logout() {
   await ensureClientInitialized();
-  await msalInstance.logoutRedirect();
+  await msalInstance.logoutRedirect({
+    postLogoutRedirectUri: redirectUri,
+  });
 }
 
 export function useAuth() {
