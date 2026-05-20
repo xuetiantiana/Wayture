@@ -1,14 +1,42 @@
 <template>
-  <section class="memories-page" aria-label="回忆页面" style="padding-top: 5em;background-color: #fff;height: 100%;box-sizing: border-box;">
+  <section
+    class="memories-page"
+    aria-label="回忆页面"
+    style="
+      padding-top: 5em;
+      background-color: #fff;
+      height: 100%;
+      box-sizing: border-box;
+    "
+  >
     <div class="panel-card p-24">
+      <div>
+        <button
+          class="button-secondary"
+          @click="router.push('/memories-gallery')"
+        >
+          查看回忆图册{{
+            tour.gallerySessions.value.length > 0
+              ? ` (${tour.gallerySessions.value.length})`
+              : ""
+          }}
+        </button>
+      </div>
+      <div class="top-title">
+        <div class="img-list">
+          <img :src="icon1" alt="" />
+          <img :src="icon2" alt="" />
+          <img :src="icon3" alt="" />
+        </div>
+        <p>
+          Hi, {{ tour.userSettings.value.nickname || tour.currentUsername.value }} Family Passport<br />
+          Begin Your Memory Journey
+        </p>
+      </div>
       <div class="flex-row align-center justify-between wrap">
         <div>
-          <h2 class="section-title">我的旅行回忆</h2>
           <p>上传照片，选择后生成回忆图册。</p>
         </div>
-        <button class="button-secondary" @click="router.push('/memories-gallery')">
-          查看回忆图册{{ tour.gallerySessions.value.length > 0 ? ` (${tour.gallerySessions.value.length})` : '' }}
-        </button>
       </div>
 
       <!-- 加载中 -->
@@ -21,11 +49,15 @@
       <div v-else>
         <div class="photo-grid">
           <!-- 上传按钮 -->
-          <div class="upload-slot" :class="{ disabled: isUploading }" @click="triggerFileInput">
+          <div
+            class="upload-slot"
+            :class="{ disabled: isUploading }"
+            @click="triggerFileInput"
+          >
             <div class="upload-content">
               <div v-if="isUploading" class="spinner small"></div>
               <div v-else class="upload-icon">+</div>
-              <p>{{ isUploading ? '上传中...' : '点击上传照片' }}</p>
+              <p>{{ isUploading ? "上传中..." : "点击上传照片" }}</p>
             </div>
             <input
               ref="fileInput"
@@ -47,7 +79,10 @@
           >
             <img :src="getPhotoUrl(photo)" :alt="photo.filename || '照片'" />
             <div class="select-overlay">
-              <div class="checkbox" :class="{ checked: selectedIndices.has(photo.index) }"></div>
+              <div
+                class="checkbox"
+                :class="{ checked: selectedIndices.has(photo.index) }"
+              ></div>
             </div>
           </div>
         </div>
@@ -55,21 +90,31 @@
         <!-- 操作区 -->
         <div class="action-section">
           <div class="action-bar">
-            <span class="select-count">已选 {{ selectedIndices.size }} / {{ photos.length }} 张</span>
+            <span class="select-count"
+              >已选 {{ selectedIndices.size }} / {{ photos.length }} 张</span
+            >
             <div class="action-buttons">
-              <button v-if="photos.length > 0" class="button-secondary" @click="toggleSelectAll">
-                {{ selectedIndices.size === photos.length ? '取消全选' : '全选' }}
+              <button
+                v-if="photos.length > 0"
+                class="button-secondary"
+                @click="toggleSelectAll"
+              >
+                {{
+                  selectedIndices.size === photos.length ? "取消全选" : "全选"
+                }}
               </button>
               <button
                 class="button-primary"
                 :disabled="selectedIndices.size === 0 || isGenerating"
                 @click="generateGallery"
               >
-                {{ isGenerating ? '生成中...' : '生成回忆' }}
+                {{ isGenerating ? "生成中..." : "生成手绘" }}
               </button>
             </div>
           </div>
-          <p v-if="photos.length === 0" class="hint-text">请先上传至少一张照片</p>
+          <p v-if="photos.length === 0" class="hint-text">
+            请先上传至少一张照片
+          </p>
         </div>
       </div>
     </div>
@@ -78,16 +123,21 @@
     <div v-if="viewingPhoto" class="photo-modal" @click="viewingPhoto = null">
       <div class="photo-modal-content" @click.stop>
         <img :src="viewingPhoto" alt="照片" />
-        <button class="close-modal-btn" @click="viewingPhoto = null">&times;</button>
+        <button class="close-modal-btn" @click="viewingPhoto = null">
+          &times;
+        </button>
       </div>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useTourStore } from '../composables/useTourStore';
+import { ref, reactive, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useTourStore } from "../composables/useTourStore";
+import icon1 from "../assets/images/icon1.png";
+import icon2 from "../assets/images/icon2.png";
+import icon3 from "../assets/images/icon3.png";
 
 const router = useRouter();
 const tour = useTourStore();
@@ -102,14 +152,19 @@ const isGenerating = ref(false);
 const viewingPhoto = ref<string | null>(null);
 
 function normalizeUrl(url: string): string {
-  if (!url || url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+  if (
+    !url ||
+    url.startsWith("http://") ||
+    url.startsWith("https://") ||
+    url.startsWith("data:")
+  ) {
     return url;
   }
-  return `${apiBase}${url.startsWith('/') ? '' : '/'}${url}`;
+  return `${apiBase}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
 function getPhotoUrl(photo: any): string {
-  const raw = photo.url || photo.image_url || photo.thumbnail_url || '';
+  const raw = photo.url || photo.image_url || photo.thumbnail_url || "";
   return normalizeUrl(raw);
 }
 
@@ -117,11 +172,13 @@ function getPhotoUrl(photo: any): string {
 async function fetchPhotos() {
   isLoading.value = true;
   try {
-    const resp = await fetch(`${apiBase}/api/images/${encodeURIComponent(tour.currentUsername.value)}`);
+    const resp = await fetch(
+      `${apiBase}/api/images/${encodeURIComponent(tour.currentUsername.value)}`,
+    );
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     photos.value = await resp.json();
   } catch (e) {
-    console.warn('获取照片列表失败:', e);
+    console.warn("获取照片列表失败:", e);
     photos.value = [];
   } finally {
     isLoading.value = false;
@@ -142,21 +199,21 @@ async function handleUpload(event: Event) {
   isUploading.value = true;
   try {
     for (const file of Array.from(files)) {
-      if (!file.type.startsWith('image/')) continue;
+      if (!file.type.startsWith("image/")) continue;
       const formData = new FormData();
-      formData.append('username', tour.currentUsername.value);
-      formData.append('file', file, file.name);
+      formData.append("username", tour.currentUsername.value);
+      formData.append("file", file, file.name);
       await fetch(`${apiBase}/api/upload-image`, {
-        method: 'POST',
+        method: "POST",
         body: formData,
       });
     }
     await fetchPhotos();
   } catch (e) {
-    console.error('上传失败:', e);
+    console.error("上传失败:", e);
   } finally {
     isUploading.value = false;
-    target.value = '';
+    target.value = "";
   }
 }
 
@@ -173,7 +230,7 @@ function toggleSelectAll() {
   if (selectedIndices.size === photos.value.length) {
     selectedIndices.clear();
   } else {
-    photos.value.forEach(p => selectedIndices.add(p.index));
+    photos.value.forEach((p) => selectedIndices.add(p.index));
   }
 }
 
@@ -184,8 +241,8 @@ async function generateGallery() {
   isGenerating.value = true;
   try {
     const resp = await fetch(`${apiBase}/api/generate-gallery`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         username: tour.currentUsername.value,
         selected_indices: Array.from(selectedIndices),
@@ -197,21 +254,26 @@ async function generateGallery() {
 
     const session = {
       id: memory.id || Date.now().toString(),
-      title: memory.title || `回忆 ${new Date().toLocaleDateString('zh-CN')}`,
+      title: memory.title || `回忆 ${new Date().toLocaleDateString("zh-CN")}`,
       created_at: new Date().toISOString(),
       images: (data.images || []).map((img: any) =>
-        typeof img === 'string'
-          ? { index: 0, generated_url: img, description: '' }
-          : { index: img.index ?? 0, generated_url: img.generated_url || img.url || '', description: img.description || '' , source_photo: img.source_photo }
+        typeof img === "string"
+          ? { index: 0, generated_url: img, description: "" }
+          : {
+              index: img.index ?? 0,
+              generated_url: img.generated_url || img.url || "",
+              description: img.description || "",
+              source_photo: img.source_photo,
+            },
       ),
       source_photo_count: memory.source_photo_count || 0,
       generated_image_count: memory.generated_image_count || 0,
     };
     tour.addGallerySession(session);
     selectedIndices.clear();
-    router.push('/memories-gallery');
+    router.push("/memories-gallery");
   } catch (e) {
-    console.error('生成回忆失败:', e);
+    console.error("生成回忆失败:", e);
   } finally {
     isGenerating.value = false;
   }
@@ -222,9 +284,46 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .memories-page {
   padding: 24px;
+}
+
+.panel-card {
+  max-width: 1060px;
+  margin: 0 auto;
+  width: 80%;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  .top-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 3em;
+    
+    p {
+      font-size: 1.5em;
+      font-weight: 500;
+      color: #333;
+      text-align: center;
+    }
+  }
+  .img-list {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    img {
+      width: 48px;
+    }
+    p {
+      font-size: 1.5em;
+      font-weight: 500;
+      color: #333;
+    }
+  }
 }
 
 /* --- Loading --- */
@@ -253,7 +352,9 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* --- Photo grid --- */
@@ -261,7 +362,6 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 16px;
-  margin: 24px 0;
 }
 
 .upload-slot {
@@ -273,7 +373,6 @@ onMounted(() => {
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  background: rgba(15, 23, 42, 0.3);
 }
 
 .upload-slot:hover:not(.disabled) {
@@ -314,7 +413,9 @@ onMounted(() => {
   border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
   border: 3px solid transparent;
 }
 
@@ -330,8 +431,9 @@ onMounted(() => {
 .photo-item img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
+  background: #eee;
 }
 
 .select-overlay {
@@ -356,7 +458,7 @@ onMounted(() => {
 }
 
 .checkbox.checked::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 7px;
   top: 3px;
@@ -388,6 +490,14 @@ onMounted(() => {
 .action-buttons {
   display: flex;
   gap: 10px;
+
+  .button-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    filter: grayscale(0.25);
+  }
 }
 
 .hint-text {

@@ -127,9 +127,9 @@ async function loadTourPoints(): Promise<void> {
   return pointsLoadPromise;
 }
 
-async function planRoute(): Promise<void> {
+async function planRoute(): Promise<boolean> {
   const selected = selectedPoints.value;
-  if (selected.length === 0) return;
+  if (selected.length === 0) return false;
 
   routeLoading.value = true;
   try {
@@ -155,10 +155,12 @@ async function planRoute(): Promise<void> {
         selectedIds.value = orderedIds;
       }
     }
+    return true;
   } catch (e) {
     console.warn('Failed to plan route, keeping original order:', e);
     routePlan.value = [];
     routeSummary.value = '';
+    return false;
   } finally {
     routeLoading.value = false;
   }

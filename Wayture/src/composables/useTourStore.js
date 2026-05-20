@@ -93,7 +93,7 @@ async function loadTourPoints() {
 async function planRoute() {
     const selected = selectedPoints.value;
     if (selected.length === 0)
-        return;
+        return false;
     routeLoading.value = true;
     try {
         const resp = await fetch(`${apiBase}/api/plan-route`, {
@@ -118,11 +118,13 @@ async function planRoute() {
                 selectedIds.value = orderedIds;
             }
         }
+        return true;
     }
     catch (e) {
         console.warn('Failed to plan route, keeping original order:', e);
         routePlan.value = [];
         routeSummary.value = '';
+        return false;
     }
     finally {
         routeLoading.value = false;

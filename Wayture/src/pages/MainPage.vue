@@ -15,7 +15,8 @@
               <span class="field-legend-name">{{ item.field }}</span>
             </div>
           </div>
-          <div class="map-image">
+          <div style="overflow: auto;">
+            <div class="map-image">
             <img class="map-img" :src="tour.mapImageUrl" alt="游览地图" />
             <button
               v-for="point in points"
@@ -42,6 +43,7 @@
                 <span class="map-point-order">{{ getPointOrder(point.id) }}</span>
               </span>
             </button>
+          </div>
           </div>
           <ul class="tour-list-case">
             <li v-for="item in tourCases" :key="item.name" @click="applyTourCase(item.ids)">{{ item.label }}</li>
@@ -271,10 +273,8 @@ onMounted(async () => {
   .tab-group {
     display: inline-flex;
     gap: 0;
-    padding: 2px;
-    border: 1px solid rgba(255, 255, 255, 0.38);
     border-radius: 8px;
-    background: rgba(237, 239, 205, 0.45);
+    background: rgba(245, 245, 245, 1);
     overflow: hidden;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
@@ -283,8 +283,7 @@ onMounted(async () => {
       min-width: 58px;
       height: 42px;
       border: none;
-      border-radius: 6px;
-      background: rgba(245, 245, 245, 1);
+      background: transparent;
       color: rgba(23, 68, 58, 1);
       font-size: 18px;
       font-weight: 700;
@@ -354,8 +353,6 @@ onMounted(async () => {
     .map-image {
       position: relative;
       width: 100%;
-      height: 100vh;
-      overflow: auto;
 
       .map-img {
         display: block;
@@ -370,7 +367,7 @@ onMounted(async () => {
         gap: 4px;
         width: max-content;
         height: auto;
-        transform: translate(-50%, calc(-100% + 8px));
+        transform: translate(-50%, -50%);
         padding: 0;
         border: none;
         background: transparent;
@@ -429,6 +426,9 @@ onMounted(async () => {
         font-weight: 400;
         line-height: 1.2;
         white-space: nowrap;
+        position: absolute;
+        bottom: calc(100% + 6px);
+
       }
     }
 
@@ -514,9 +514,10 @@ onMounted(async () => {
     .toggle-icon{
       font-size: 12px;
       cursor: pointer;
-      background-color: rgba(15, 23, 42, 0.8);
+      background-color: rgba(15, 23, 42, 0.2);
       padding: .5em 1em;
       border-radius: 1em;
+      color: #e2e8f0;
     }
    
 

@@ -3,8 +3,8 @@
     <img class="hero-background" src="../assets/images/index-bg.png" alt="" aria-hidden="true" />
     <!-- <div class="hero-vignette"></div> -->
     <div class="hero-content">
-      <p class="hero-kicker">CHIMU</p>
-      <img class="hero-logo" src="../assets/images/chimu.png" alt="CHIMU WONDERLAND" />
+      <!-- <p class="hero-kicker">CHIMU</p> -->
+      <!-- <img class="hero-logo" src="../assets/images/chimu.png" alt="CHIMU WONDERLAND" /> -->
       <p class="hero-caption">欢迎来到尺木神奇世界</p>
       <div class="hero-actions">
         <button class="hero-button button-glass" @click="explore">Start exploring</button>
@@ -77,7 +77,10 @@ function memories() {
   }
 
   .hero-content {
-    position: relative;
+    position: absolute;
+    left: 50%;
+    bottom: 10%;
+    transform: translate(-50%, 0);
     text-align: center;
     max-width: min(840px, 40%);
     color: #14100d;
@@ -86,7 +89,7 @@ function memories() {
     .hero-kicker {
       margin: 0;
       color: rgba(187, 112, 48, 0.92);
-      font-weight: 800;
+      font-weight: 400;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       font-size: clamp(1.2rem, 2vw, 2rem);
@@ -105,8 +108,8 @@ function memories() {
       margin: 0 0 30px;
       color: #0f0e0a;
       font-size: clamp(1.9rem, 2.3vw, 3rem);
-      font-weight: 700;
-      text-shadow: 0 1px 6px rgba(242, 228, 187, 0.45);
+      font-weight: 400;
+      margin-bottom: 2em;
     }
 
     .hero-actions {

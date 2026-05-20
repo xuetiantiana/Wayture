@@ -80,6 +80,7 @@ const detailTags = computed(() => {
 
 <style scoped lang="scss">
 .attraction-modal {
+    color: #f0e4d0;
   position: fixed;
   left: 50%;
   top: 50%;
@@ -107,6 +108,7 @@ const detailTags = computed(() => {
     z-index: 11;
     display: grid;
     place-items: center;
+    color: #f0e4d0;
 
     .el-icon {
       display: inline-flex;

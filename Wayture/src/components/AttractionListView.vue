@@ -37,6 +37,7 @@
             >
               <img v-if="selectedIds.includes(point.id)" class="select-icon" :src="checkIcon" alt="" />
             </button>
+            <div class="img-card-name">{{ point.name }}</div>
             <button class="img-card-detail" type="button" @click.stop="showDetail(point.id, $event)">详情介绍</button>
           </div>
         </article>
@@ -188,6 +189,7 @@ function handleAdd(id: number) {
   width: 100%;
   border-radius: 14px;
   overflow: hidden;
+  background-color: #eee;
 }
 
 .img-card-cover {
@@ -227,6 +229,18 @@ function handleAdd(id: number) {
 .select-icon {
   width: 60%;
   object-fit: contain;
+}
+
+.img-card-name {
+  position: absolute;
+  left: 10px;
+  bottom: 42px;
+  max-width: calc(100% - 20px);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.3;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
 }
 
 .img-card-detail {

@@ -16,6 +16,18 @@
         <p>正在规划最佳路线...</p>
       </div>
 
+      <div v-else-if="routeError" class="route-error">
+        <p>{{ routeError }}</p>
+        <button
+          type="button"
+          class="retry-button"
+          :disabled="tour.routeLoading.value"
+          @click="retryPlanRoute"
+        >
+          重新请求
+        </button>
+      </div>
+
       <!-- 路线列表 -->
       <div v-else class="progress-list">
         <div
@@ -25,7 +37,14 @@
           :class="{ active: highlightId === point.id }"
           @click="setHighlight(point.id)"
         >
-          <div class="step-number">{{ index + 1 }}</div>
+          <div class="step-number">
+            <img
+              v-if="point.images?.[0]"
+              :src="point.images[0]"
+              :alt="point.name"
+            />
+            <span v-else>{{ index + 1 }}</span>
+          </div>
           <div class="step-content">
             <span class="label">景点</span>
             <p>
@@ -55,18 +74,40 @@
       <div class="map-toolbar">
         <strong>小七幸福一家尺木神奇世界一日游</strong>
         <div class="map-actions">
-          <span class="map-action map-action-edit" @click="editMap"
-            >✎ 编辑地图</span
-          >
-          <span
-            class="map-action map-action-confirm"
-            @click="generatePostcard()"
-            >☼ {{ postcardGenerating ? "生成中" : "确定" }}</span
-          >
+          <template v-if="postcardImageUrl && !postcardGenerating">
+            <span
+              class="map-action map-action-download"
+              :class="{ disabled: imageDownloading }"
+              @click="downloadImage"
+              >☼ {{ imageDownloading ? "下载中" : "下载图片" }}</span
+            >
+          </template>
+          <template v-else>
+            <span
+              class="map-action map-action-edit"
+              :class="{ disabled: postcardGenerating }"
+              @click="editMap"
+              >✎ 编辑地图</span
+            >
+            <span
+              class="map-action map-action-confirm"
+              :class="{ disabled: !canGeneratePostcard }"
+              @click="generatePostcard()"
+              >☼ {{ postcardGenerating ? "生成中" : "确定" }}</span
+            >
+          </template>
         </div>
       </div>
       <div style="flex: 1; overflow: auto;padding: 2em 0;">
-        <div style="width: 1000px; margin: 0 auto;max-width: 100%;">
+        <div
+          ref="downloadContainer"
+          :style="{
+            width: postcardGenerating || postcardImageUrl ? '645px' : '1000px',
+            margin: '0 auto',
+            maxWidth: '100%',
+          }"
+          class="dowmload-container"
+        >
           <div class="map-frame tour-map" :style="mapFrameStyle">
             <canvas ref="mapCanvas" class="map-canvas"></canvas>
           </div>
@@ -92,6 +133,7 @@
 </template>
 
 <script setup lang="ts">
+import html2canvas from "html2canvas";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useTourStore } from "../composables/useTourStore";
@@ -106,24 +148,38 @@ const selectedPoints = tour.selectedPoints;
 const highlightId = tour.highlightId;
 const routeSummary = tour.routeSummary;
 const mapCanvas = ref<HTMLCanvasElement | null>(null);
+const downloadContainer = ref<HTMLElement | null>(null);
 const postcardGenerating = ref(false);
+const imageDownloading = ref(false);
 const postcardImageUrl = ref("");
 const promptParts = ref<string[]>([]);
 const mapAspectRatio = ref("auto");
+const routeError = ref("");
+const routePlanned = ref(false);
 const mapImageElement = new Image();
+mapImageElement.crossOrigin = "anonymous";
 mapImageElement.src = tour.mapImageUrl;
 
 const mapFrameStyle = computed(() => ({
   aspectRatio: mapAspectRatio.value,
 }));
 
+const canGeneratePostcard = computed(
+  () =>
+    routePlanned.value &&
+    !tour.routeLoading.value &&
+    !routeError.value &&
+    !postcardGenerating.value,
+);
+
+// 按 field 定义颜色
 const fieldColorMap: Record<string, string> = {
-  魔法森林: "#10B981",
-  尺木小镇: "#8B5A2B",
-  尖叫小镇: "#1E2A9B",
-  小勇士的冒险亲子乐园: "#1E2A9B",
-  冒险者俱乐部: "#FF8A00",
-  萌宠乐园: "#7A7A7A",
+  'MSRA专区':"rgba(168, 27, 128, 1)",
+  '魔法森林': 'rgba(27, 168, 102, 1)',
+  '尖叫小镇': 'rgba(23, 37, 126, 1)',
+  '小勇士的冒险亲子乐园': 'rgba(10, 151, 229, 1)',
+  '冒险者俱乐部': 'rgba(247, 143, 8, 1)',
+  '萌宠乐园': 'rgba(49, 120, 35, 1)'
 };
 
 function getFieldColor(field: string): string {
@@ -232,6 +288,10 @@ function toPostcard() {
 }
 
 function editMap() {
+  if (postcardGenerating.value) {
+    return;
+  }
+
   router.push("/main");
 }
 
@@ -248,10 +308,11 @@ function normalizeImageUrl(url: string): string {
 }
 
 async function generatePostcard(additionPrompt = promptParts.value.join("\n")) {
-  if (postcardGenerating.value) {
+  if (!canGeneratePostcard.value) {
     return;
   }
 
+  postcardImageUrl.value = "";
   postcardGenerating.value = true;
   try {
     const resp = await fetch(`${tour.apiBase}/api/generate-postcard`, {
@@ -267,13 +328,38 @@ async function generatePostcard(additionPrompt = promptParts.value.join("\n")) {
 
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
-    postcardImageUrl.value = data.image_url
-      ? normalizeImageUrl(data.image_url)
-      : "";
+    if (!data.image_url) {
+      throw new Error("未返回明信片图片地址");
+    }
+    postcardImageUrl.value = normalizeImageUrl(data.image_url);
   } catch (error) {
     console.error("生成明信片出错:", error);
   } finally {
     postcardGenerating.value = false;
+  }
+}
+
+async function downloadImage() {
+  if (imageDownloading.value || !downloadContainer.value) {
+    return;
+  }
+
+  imageDownloading.value = true;
+  try {
+    await nextTick();
+    const canvas = await html2canvas(downloadContainer.value, {
+      backgroundColor: "#ffffff",
+      scale: window.devicePixelRatio || 1,
+      useCORS: true,
+    });
+    const link = document.createElement("a");
+    link.download = `wayture-${Date.now()}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  } catch (error) {
+    console.error("下载图片失败:", error);
+  } finally {
+    imageDownloading.value = false;
   }
 }
 
@@ -289,6 +375,31 @@ function initPostcardPrompt() {
   if (nickname) parts.push(`昵称/标题: ${nickname}`);
   if (tourStyle) parts.push(`游览风格: ${tourStyle}`);
   promptParts.value = parts;
+}
+
+async function requestRoutePlan() {
+  routeError.value = "";
+  routePlanned.value = false;
+  const planned = await tour.planRoute();
+  if (!planned || tour.routePlan.value.length === 0) {
+    routeError.value = "路线规划失败，请重新请求。";
+    return false;
+  }
+
+  routePlanned.value = true;
+
+  await nextTick();
+  drawMap();
+
+  if (!highlightId.value) {
+    tour.setHighlight(orderedPoints.value[0]?.id ?? null);
+  }
+  await drawMap();
+  return true;
+}
+
+async function retryPlanRoute() {
+  await requestRoutePlan();
 }
 
 onMounted(async () => {
@@ -313,14 +424,7 @@ onMounted(async () => {
   }
 
   // 调用 API 规划路线，再根据接口返回的 route/order 重绘选中点
-  await tour.planRoute();
-  await nextTick();
-  drawMap();
-
-  if (!highlightId.value) {
-    tour.setHighlight(orderedPoints.value[0]?.id ?? null);
-  }
-  await drawMap();
+  await requestRoutePlan();
   // window.addEventListener("resize", resizeCanvas);
 });
 
@@ -375,6 +479,37 @@ watch([points, orderedPoints, highlightId], async () => {
       }
     }
 
+    .route-error {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 24px;
+      border-radius: 18px;
+      background: rgba(239, 68, 68, 0.08);
+      color: #991b1b;
+
+      p {
+        margin: 0;
+      }
+
+      .retry-button {
+        min-height: 36px;
+        padding: 0 16px;
+        border: 0;
+        border-radius: 8px;
+        background: rgb(255, 183, 0);
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+
+        &:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+      }
+    }
+
     .progress-list {
       display: flex;
       flex: 1;
@@ -398,10 +533,18 @@ watch([points, orderedPoints, highlightId], async () => {
           place-items: center;
           width: 44px;
           height: 44px;
+          overflow: hidden;
           border-radius: 16px;
           background: rgba(59, 130, 246, 0.14);
           color: #eff6ff;
           font-weight: 700;
+
+          img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
         }
 
         .step-content {
@@ -484,6 +627,19 @@ watch([points, orderedPoints, highlightId], async () => {
             background: #e2b82f;
             color: #fff;
             box-shadow: 0 2px 8px rgba(161, 111, 0, 0.22);
+          }
+
+          &.map-action-download {
+            background: rgb(255, 183, 0);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(161, 111, 0, 0.22);
+          }
+
+          &.disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
           }
         }
       }

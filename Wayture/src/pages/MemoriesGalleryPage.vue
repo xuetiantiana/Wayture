@@ -99,6 +99,10 @@ onMounted(async () => {
 <style scoped>
 .gallery-page {
   gap: 24px;
+  padding: 50px;
+  /* max-width: 1060px; */
+  margin: 0 auto;
+  /* width: 80%; */
 }
 
 .session-sidebar {
@@ -140,7 +144,7 @@ onMounted(async () => {
 .session-list {
   display: grid;
   gap: 10px;
-  margin-top: 20px;
+  margin: 20px 0; 
   max-height: 520px;
   overflow-y: auto;
 }
@@ -153,7 +157,7 @@ onMounted(async () => {
   padding: 16px 18px;
   border: 1px solid rgba(148, 163, 184, 0.14);
   border-radius: 18px;
-  background: rgba(15, 23, 42, 0.94);
+  background: #fff;
   color: inherit;
   text-align: left;
   cursor: pointer;
@@ -175,12 +179,13 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 20px;
+  margin-top: 30px;
 }
 
 .gallery-item {
   border-radius: 16px;
   overflow: hidden;
-  background: rgba(15, 23, 42, 0.5);
+  background: #eee;
   border: 1px solid rgba(148, 163, 184, 0.12);
   cursor: pointer;
   transition: transform 0.2s, border-color 0.2s;
@@ -193,15 +198,14 @@ onMounted(async () => {
 
 .gallery-item img {
   width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
+  /* aspect-ratio: 4 / 3;
+  object-fit: cover; */
   display: block;
 }
 
 .gallery-desc {
   margin: 0;
   padding: 14px 16px;
-  color: #cbd5e1;
   font-size: 0.92rem;
   line-height: 1.6;
 }
