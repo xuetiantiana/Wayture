@@ -1,42 +1,63 @@
 <template>
   <section class="memories-page" aria-label="回忆页面">
     <section class="memory-hero">
-      <button class="back-button" type="button" @click="router.back()">
+      <button class="back-button" type="button" @click="router.push('/')">
         &lsaquo;
       </button>
 
       <div class="hero-content">
         <h1>
-          Hi, {{ tour.userSettings.value.nickname || tour.currentUsername.value }} Family Passport<br />
-          Begin Your Memory Journey
+          Hi, {{ tour.userSettings.value.nickname || tour.currentUsername.value }} 幸福一家<br />
+          开始创建你的旅行回忆吧
         </h1>
 
         <div class="passport-preview">
-          <img :src="exampleImage" alt="Memory Passport example" />
+          <img :src="previewExampleImage" alt="Memory Passport example" />
         </div>
 
-        <div class="hero-actions">
-          <button type="button" @click="generateGallery">Memory Journal</button>
-          <button type="button" @click="generateGallery">Memory Album</button>
-        </div>
       </div>
     </section>
 
     <section class="memory-workspace">
       <header class="workspace-header">
-        <h2>Upload your photos</h2>
+        <div class="memory-type-switch" aria-label="选择生成类型">
+          <button
+            type="button"
+            :class="{ active: selectedMemoryType === 'journal' }"
+            @click="selectedMemoryType = 'journal'"
+          >
+            手账
+          </button>
+          <button
+            type="button"
+            :class="{ active: selectedMemoryType === 'album' }"
+            @click="selectedMemoryType = 'album'"
+          >
+            相册
+          </button>
+        </div>
         <nav class="workspace-links" aria-label="回忆导航">
-          <button type="button" @click="router.push('/memories-gallery')">
-            View the journal
+          <button type="button" @click="openGallery('journal')">
+            查看手账
           </button>
           <span></span>
-          <button type="button" @click="router.push('/memories-gallery')">
-            View album
+          <button type="button" @click="openGallery('album')">
+            查看相册
           </button>
         </nav>
       </header>
 
+      <input
+        ref="fileInput"
+        type="file"
+        multiple
+        accept="image/*"
+        @change="handleUpload"
+        style="display: none"
+      />
+
       <div
+        v-if="photos.length === 0"
         class="upload-panel"
         :class="{ disabled: isUploading }"
         @click="triggerFileInput"
@@ -44,14 +65,6 @@
         <div v-if="isUploading" class="spinner small"></div>
         <div v-else class="upload-icon">+</div>
         <p>{{ isUploading ? "Uploading..." : "Upload/Drag your photos, Start Creating Your Memories" }}</p>
-        <input
-          ref="fileInput"
-          type="file"
-          multiple
-          accept="image/*"
-          @change="handleUpload"
-          style="display: none"
-        />
       </div>
 
       <div v-if="isLoading" class="loading-section">
@@ -61,6 +74,16 @@
 
       <template v-else>
         <div class="photo-strip">
+          <div
+            v-if="photos.length > 0"
+            class="photo-item upload-tile"
+            :class="{ disabled: isUploading }"
+            @click="triggerFileInput"
+          >
+            <div v-if="isUploading" class="spinner small"></div>
+            <div v-else class="upload-icon">+</div>
+          </div>
+
           <div
             v-for="photo in photos"
             :key="photo.index"
@@ -82,18 +105,20 @@
           <p>最多可上传8张</p>
           <div class="action-buttons">
             <button
+              v-if="selectedMemoryType === 'journal'"
               class="button-primary"
               :disabled="selectedIndices.size === 0 || isGenerating"
-              @click="generateGallery"
+              @click="generateJournal"
             >
-              {{ isGenerating ? "Generating..." : "Generate Memory Journal" }}
+              {{ isGenerating ? "生成中..." : "生成记忆手账" }}
             </button>
             <button
+              v-else
               class="button-primary"
               :disabled="selectedIndices.size === 0 || isGenerating"
-              @click="generateGallery"
+              @click="generateAlbum"
             >
-              {{ isGenerating ? "Generating..." : "Generate Memory Album" }}
+              {{ isGenerating ? "生成中..." : "生成记忆相册" }}
             </button>
           </div>
         </div>
@@ -113,10 +138,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from "vue";
+import { computed, ref, reactive, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useTourStore } from "../composables/useTourStore";
-import exampleImage from "../assets/images/example-1.png";
+import journalExampleImage from "../assets/images/example-1.png";
+import albumExampleImage from "../assets/images/example-2.png";
 
 const router = useRouter();
 const tour = useTourStore();
@@ -129,6 +155,11 @@ const isLoading = ref(false);
 const isUploading = ref(false);
 const isGenerating = ref(false);
 const viewingPhoto = ref<string | null>(null);
+const selectedMemoryType = ref<MemoryMode>("journal");
+const maxSelectedPhotos = 8;
+const previewExampleImage = computed(() =>
+  selectedMemoryType.value === "journal" ? journalExampleImage : albumExampleImage,
+);
 
 function normalizeUrl(url: string): string {
   if (
@@ -155,7 +186,8 @@ async function fetchPhotos() {
       `${apiBase}/api/images/${encodeURIComponent(tour.currentUsername.value)}`,
     );
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    photos.value = await resp.json();
+    const data = await resp.json();
+    photos.value = Array.isArray(data) ? data.reverse() : [];
   } catch (e) {
     console.warn("获取照片列表失败:", e);
     photos.value = [];
@@ -182,12 +214,15 @@ async function handleUpload(event: Event) {
       const formData = new FormData();
       formData.append("username", tour.currentUsername.value);
       formData.append("file", file, file.name);
-      await fetch(`${apiBase}/api/upload-image`, {
+      const resp = await fetch(`${apiBase}/api/upload-image`, {
         method: "POST",
         body: formData,
       });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+      const uploadedPhoto = await resp.json();
+      photos.value.unshift(uploadedPhoto);
     }
-    await fetchPhotos();
   } catch (e) {
     console.error("上传失败:", e);
   } finally {
@@ -200,9 +235,12 @@ async function handleUpload(event: Event) {
 function toggleSelect(index: number) {
   if (selectedIndices.has(index)) {
     selectedIndices.delete(index);
-  } else {
-    selectedIndices.add(index);
+    return;
   }
+
+  if (selectedIndices.size >= maxSelectedPhotos) return;
+
+  selectedIndices.add(index);
 }
 
 function toggleSelectAll() {
@@ -214,12 +252,18 @@ function toggleSelectAll() {
 }
 
 // --- 生成回忆 ---
-async function generateGallery() {
+type MemoryMode = "journal" | "album";
+
+function openGallery(type: MemoryMode) {
+  router.push({ path: "/memories-gallery", query: { type } });
+}
+
+async function generateMemory(endpoint: string, type: MemoryMode) {
   if (selectedIndices.size === 0) return;
 
   isGenerating.value = true;
   try {
-    const resp = await fetch(`${apiBase}/api/generate-gallery`, {
+    const resp = await fetch(`${apiBase}${endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -228,34 +272,21 @@ async function generateGallery() {
       }),
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const data = await resp.json();
-    const memory = data.memory || {};
-
-    const session = {
-      id: memory.id || Date.now().toString(),
-      title: memory.title || `回忆 ${new Date().toLocaleDateString("zh-CN")}`,
-      created_at: new Date().toISOString(),
-      images: (data.images || []).map((img: any) =>
-        typeof img === "string"
-          ? { index: 0, generated_url: img, description: "" }
-          : {
-              index: img.index ?? 0,
-              generated_url: img.generated_url || img.url || "",
-              description: img.description || "",
-              source_photo: img.source_photo,
-            },
-      ),
-      source_photo_count: memory.source_photo_count || 0,
-      generated_image_count: memory.generated_image_count || 0,
-    };
-    tour.addGallerySession(session);
     selectedIndices.clear();
-    router.push("/memories-gallery");
+    openGallery(type);
   } catch (e) {
     console.error("生成回忆失败:", e);
   } finally {
     isGenerating.value = false;
   }
+}
+
+function generateJournal() {
+  return generateMemory("/api/generate-journal", "journal");
+}
+
+function generateAlbum() {
+  return generateMemory("/api/generate-album", "album");
 }
 
 onMounted(() => {
@@ -277,7 +308,6 @@ onMounted(() => {
   .memory-hero {
     position: relative;
     display: flex;
-    align-items: center;
     min-height: 100vh;
     padding: 4.375rem 7.5% 5rem;
     background:
@@ -305,7 +335,7 @@ onMounted(() => {
       max-width: 35.625rem;
 
       h1 {
-        margin: 0 0 2.125rem;
+        margin: 4rem 0 3rem 0;
         font-size: 1.75rem;
         font-weight: 500;
         line-height: 1.35;
@@ -326,29 +356,18 @@ onMounted(() => {
         }
       }
 
-      .hero-actions {
-        display: flex;
-        gap: 0.75rem;
-        margin-top: 0.875rem;
-
-        button {
-          min-height: 1.875rem;
-          padding: 0 0.75rem;
-          border: 0;
-          border-radius: 0.375rem;
-          background: rgba(232, 238, 184, 0.66);
-          color: #222;
-          cursor: pointer;
-        }
-      }
+   
     }
   }
 
   .memory-workspace {
+    align-self: stretch;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     min-width: 0;
+    min-height: 0;
+    overflow: hidden;
     padding: 4.375rem 8.6% 5.125rem;
     background: #fff;
 
@@ -361,7 +380,7 @@ onMounted(() => {
     }
 
     .workspace-header {
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
 
       h2 {
         margin: 0;
@@ -388,6 +407,34 @@ onMounted(() => {
           background: #d6d6d6;
         }
       }
+
+      .memory-type-switch {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+
+        button {
+          padding: 0.45rem 1rem;
+          border: 1px solid #ecdca6;
+          border-radius: 0.875rem;
+          background: #fffdf5;
+          color: #f2a900;
+          font-size: 1rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition:
+            background 0.18s,
+            border-color 0.18s,
+            box-shadow 0.18s;
+
+          &.active,
+          &:hover {
+            border-color: #e2b82f;
+            background: #fff8e2;
+            box-shadow: 0 0.375rem 0.875rem rgba(226, 184, 47, 0.16);
+          }
+        }
+      }
     }
 
     .upload-panel {
@@ -410,7 +457,6 @@ onMounted(() => {
 
       p {
         margin: 0.5rem 0 0;
-        font-weight: 600;
       }
 
       .upload-icon {
@@ -422,16 +468,22 @@ onMounted(() => {
     }
 
     .photo-strip {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(5.125rem, 1fr));
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
       gap: 0.625rem;
+      flex: 0 1 auto;
+      min-height: 0;
       margin-bottom: 1.75rem;
+      overflow-y: auto;
+      padding-right: 0.25rem;
 
       .photo-item {
         position: relative;
-        aspect-ratio: 1 / 0.82;
+        flex: 0 0 calc((100% - 2.5rem) / 5);
+        aspect-ratio: 1 / 1;
         overflow: hidden;
-        border: 0.125rem solid transparent;
+        border: 1px solid transparent;
         border-radius: 0.375rem;
         background: #eee;
         cursor: pointer;
@@ -439,8 +491,25 @@ onMounted(() => {
           border-color 0.2s,
           transform 0.2s;
 
-        &:hover {
-          transform: translateY(-0.125rem);
+
+        &.upload-tile {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-color: #dedede;
+          background: #f8f8f8;
+
+          &.disabled {
+            cursor: wait;
+            opacity: 0.7;
+          }
+
+          .upload-icon {
+            color: #777;
+            font-size: 2.35rem;
+            font-weight: 300;
+            line-height: 1;
+          }
         }
 
         &.selected {
@@ -489,6 +558,7 @@ onMounted(() => {
     }
 
     .workspace-footer {
+      flex-shrink: 0;
       color: #777;
 
       p {
@@ -609,8 +679,15 @@ onMounted(() => {
     }
 
     .memory-workspace {
+      overflow: visible;
+
       .photo-strip {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        flex: none;
+        overflow-y: visible;
+
+        .photo-item {
+          flex-basis: calc((100% - 1.25rem) / 3);
+        }
       }
     }
   }
@@ -626,7 +703,9 @@ onMounted(() => {
       }
 
       .photo-strip {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        .photo-item {
+          flex-basis: calc((100% - 0.625rem) / 2);
+        }
       }
 
       .action-buttons {

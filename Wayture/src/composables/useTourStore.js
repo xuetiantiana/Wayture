@@ -3,15 +3,16 @@ import { useAuth } from './useAuth';
 const apiBase = import.meta.env.VITE_API_BASE_URL || '';
 const mapImageUrl = `${apiBase}/static/map.jpg`;
 const userSettingsStorageKeyPrefix = 'wayture:userSettings';
+const allTourListStorageKeyPrefix = 'wayture:allTourList';
 const auth = useAuth();
 const currentUsername = computed(() => auth.account.value?.name || auth.account.value?.username || 'guest');
 const userSettingsStorageKey = computed(() => `${userSettingsStorageKeyPrefix}:${encodeURIComponent(currentUsername.value)}`);
+const allTourListStorageKey = computed(() => `${allTourListStorageKeyPrefix}:${encodeURIComponent(currentUsername.value)}`);
 const points = ref([]);
 const pointsLoading = ref(false);
 let pointsLoadPromise = null;
 const activeTab = ref('map');
 const selectedIds = ref([]);
-const highlightId = ref(null);
 function loadUserSettingsFromStorage() {
     try {
         const raw = localStorage.getItem(userSettingsStorageKey.value);
@@ -37,16 +38,36 @@ function saveUserSettingsToStorage(settings) {
         console.warn('Failed to save user settings to localStorage:', e);
     }
 }
+function loadAllTourListFromStorage() {
+    try {
+        const raw = localStorage.getItem(allTourListStorageKey.value);
+        if (!raw)
+            return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    }
+    catch (e) {
+        console.warn('Failed to load allTourList from localStorage:', e);
+        return [];
+    }
+}
+function saveAllTourListToStorage(records) {
+    try {
+        localStorage.setItem(allTourListStorageKey.value, JSON.stringify(records));
+    }
+    catch (e) {
+        console.warn('Failed to save allTourList to localStorage:', e);
+    }
+}
 // 用户设置
 const userSettings = ref(loadUserSettingsFromStorage());
+const allTourList = ref(loadAllTourListFromStorage());
+const activeTourRecordId = ref(allTourList.value[0]?.id ?? null);
 watch(currentUsername, () => {
     userSettings.value = loadUserSettingsFromStorage();
+    allTourList.value = loadAllTourListFromStorage();
+    activeTourRecordId.value = allTourList.value[0]?.id ?? null;
 });
-// 路线规划
-const routePlan = ref([]);
-const routeSummary = ref('');
-const routeLoading = ref(false);
-const gallerySessions = ref([]);
 const selectedPoints = computed(() => selectedIds.value
     .map((id) => points.value.find((item) => item.id === id))
     .filter((item) => !!item));
@@ -94,7 +115,6 @@ async function planRoute() {
     const selected = selectedPoints.value;
     if (selected.length === 0)
         return false;
-    routeLoading.value = true;
     try {
         const resp = await fetch(`${apiBase}/api/plan-route`, {
             method: 'POST',
@@ -107,42 +127,71 @@ async function planRoute() {
         if (!resp.ok)
             throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
-        routePlan.value = data.route || [];
-        routeSummary.value = data.summary || '';
-        if (routePlan.value.length > 0) {
-            const orderedIds = routePlan.value
+        const plannedRoute = Array.isArray(data.route) ? data.route : [];
+        const routeSummary = data.summary || '';
+        const originalSelectedIds = selected.map((item) => item.id);
+        let recordSelectedIds = originalSelectedIds;
+        if (plannedRoute.length > 0) {
+            const orderedIds = plannedRoute
+                .slice()
                 .sort((a, b) => a.order - b.order)
                 .map(r => r.attraction?.id)
                 .filter((id) => id != null);
             if (orderedIds.length > 0) {
                 selectedIds.value = orderedIds;
+                recordSelectedIds = orderedIds;
             }
         }
+        const record = {
+            id: `tour-${Date.now()}`,
+            title: `${userSettings.value.nickname || currentUsername.value || 'Wayture'} 的路线 ${allTourList.value.length + 1}`,
+            createdAt: new Date().toISOString(),
+            username: currentUsername.value,
+            selectedIds: recordSelectedIds,
+            routePlan: plannedRoute,
+            routeSummary,
+            postcardStatus: 'idle',
+        };
+        addTourRecord(record);
         return true;
     }
     catch (e) {
         console.warn('Failed to plan route, keeping original order:', e);
-        routePlan.value = [];
-        routeSummary.value = '';
         return false;
     }
-    finally {
-        routeLoading.value = false;
+}
+function applyTourRecord(record) {
+    activeTourRecordId.value = record.id;
+    selectedIds.value = [...record.selectedIds];
+}
+function addTourRecord(record) {
+    allTourList.value = [record, ...allTourList.value];
+    saveAllTourListToStorage(allTourList.value);
+    applyTourRecord(record);
+}
+function updateTourRecord(id, patch) {
+    allTourList.value = allTourList.value.map((record) => record.id === id ? { ...record, ...patch } : record);
+    saveAllTourListToStorage(allTourList.value);
+    if (activeTourRecordId.value === id) {
+        const updated = allTourList.value.find((record) => record.id === id);
+        if (updated) {
+            applyTourRecord(updated);
+        }
     }
 }
-function addGallerySession(session) {
-    gallerySessions.value.unshift(session);
+function setActiveTourRecord(id) {
+    const record = allTourList.value.find((item) => item.id === id);
+    if (!record)
+        return false;
+    applyTourRecord(record);
+    return true;
 }
-async function loadGallerySessions() {
-    try {
-        const resp = await fetch(`${apiBase}/api/memories/${encodeURIComponent(currentUsername.value)}`);
-        if (!resp.ok)
-            throw new Error(`HTTP ${resp.status}`);
-        gallerySessions.value = await resp.json();
-    }
-    catch (e) {
-        console.warn('Failed to load gallery sessions:', e);
-    }
+function loadLatestTourRecord() {
+    const latest = allTourList.value[0];
+    if (!latest)
+        return false;
+    applyTourRecord(latest);
+    return true;
 }
 function setTab(tab) {
     activeTab.value = tab;
@@ -158,12 +207,6 @@ function removePoint(id) {
 function setSelectedIds(ids) {
     selectedIds.value = [...ids];
 }
-function setHighlight(id) {
-    highlightId.value = id;
-}
-function clearSelection() {
-    selectedIds.value = [];
-}
 function setUserSettings(settings) {
     userSettings.value = { ...settings };
     saveUserSettingsToStorage(userSettings.value);
@@ -178,26 +221,22 @@ export function useTourStore() {
         currentUsername,
         points,
         pointsLoading,
-        routePlan,
-        routeSummary,
-        routeLoading,
-        gallerySessions,
+        allTourList,
+        activeTourRecordId,
         activeTab,
         selectedIds,
         selectedPoints,
-        highlightId,
         userSettings,
         normalizeImageUrl,
         loadTourPoints,
         planRoute,
-        addGallerySession,
-        loadGallerySessions,
+        updateTourRecord,
+        setActiveTourRecord,
+        loadLatestTourRecord,
         setTab,
         addPoint,
         removePoint,
         setSelectedIds,
-        setHighlight,
-        clearSelection,
         setUserSettings,
         hasUserSettings,
     };

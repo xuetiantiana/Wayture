@@ -7,7 +7,7 @@
 
       <div class="album-label">
         <el-icon class="album-icon"><Clock /></el-icon>
-        <span>Memory Album</span>
+        <span>{{ galleryLabel }}</span>
       </div>
 
       <div v-if="isLoadingSessions" class="loading-section">
@@ -45,21 +45,18 @@
             :key="img.index"
             class="gallery-item"
           >
-            <el-image
+            <img
               class="gallery-image"
               :src="normalizeUrl(img.generated_url)"
               :alt="img.description || '回忆'"
-              :preview-src-list="activeSession.images.map((item) => normalizeUrl(item.generated_url))"
-              :initial-index="index"
-              fit="contain"
-              preview-teleported
-            />
+              @click="openPreview(index)"
+            >
             <p v-if="img.description" class="gallery-desc">{{ img.description }}</p>
           </div>
         </div>
       </template>
       <div v-else-if="!isLoadingSessions && sessions.length === 0" class="empty-state">
-        <p>暂无回忆图册，请先上传照片并生成回忆。</p>
+        <p>{{ emptyText }}</p>
         <button class="button-primary" @click="router.push('/memories')">去上传照片</button>
       </div>
       <div v-else-if="!activeSession" class="empty-state">
@@ -68,27 +65,53 @@
     </section>
 
   </section>
+
+  <el-image-viewer
+    v-if="isPreviewVisible"
+    :url-list="previewList"
+    :initial-index="previewIndex"
+    @close="isPreviewVisible = false"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { ElImage } from 'element-plus';
+import { ref, computed, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { ElImageViewer } from 'element-plus';
 import { Clock } from '@element-plus/icons-vue';
 import { useTourStore, type GallerySession } from '../composables/useTourStore';
 
+type GalleryType = 'journal' | 'album';
+
 const router = useRouter();
+const route = useRoute();
 const tour = useTourStore();
 const isLoadingSessions = ref(false);
+const isPreviewVisible = ref(false);
+const previewIndex = ref(0);
 
-const sessions = computed(() => tour.gallerySessions.value);
+const galleryType = computed<GalleryType>(() => {
+  const type = String(route.query.type || '').toLowerCase();
+  return type === 'journal' ? 'journal' : 'album';
+});
+const galleryLabel = computed(() => galleryType.value === 'journal' ? '回忆手账' : '回忆相册');
+const emptyText = computed(() => galleryType.value === 'journal'
+  ? '暂无回忆日志，请先上传照片并生成日志。'
+  : '暂无回忆图册，请先上传照片并生成图册。');
+const sessions = ref<GallerySession[]>([]);
 const activeSessionId = ref<string | null>(sessions.value[0]?.id ?? null);
 const activeSession = computed<GallerySession | undefined>(
   () => sessions.value.find((s) => s.id === activeSessionId.value)
 );
+const previewList = computed(() => activeSession.value?.images.map((img) => normalizeUrl(img.generated_url)).filter(Boolean) || []);
 
 function normalizeUrl(url: string): string {
   return tour.normalizeImageUrl(url);
+}
+
+function openPreview(index: number) {
+  previewIndex.value = index;
+  isPreviewVisible.value = true;
 }
 
 function formatDate(iso: string): string {
@@ -96,14 +119,32 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
-onMounted(async () => {
+async function loadSessions(type: GalleryType) {
   isLoadingSessions.value = true;
-  await tour.loadGallerySessions();
-  isLoadingSessions.value = false;
-  if (!activeSessionId.value && sessions.value.length > 0) {
-    activeSessionId.value = sessions.value[0].id;
+  activeSessionId.value = null;
+  try {
+    const resource = type === 'journal' ? 'journals' : 'albums';
+    const username = encodeURIComponent(tour.currentUsername.value);
+    const resp = await fetch(`${tour.apiBase}/api/${resource}/${username}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    sessions.value = Array.isArray(data)
+      ? data
+      : data[resource] || data.sessions || data.items || [];
+    if (sessions.value.length > 0) {
+      activeSessionId.value = sessions.value[0].id;
+    }
+  } catch (e) {
+    console.warn('加载回忆列表失败:', e);
+    sessions.value = [];
+  } finally {
+    isLoadingSessions.value = false;
   }
-});
+}
+
+watch(galleryType, (type) => {
+  loadSessions(type);
+}, { immediate: true });
 </script>
 
 <style scoped lang="scss">
@@ -258,14 +299,10 @@ onMounted(async () => {
         .gallery-image {
           display: block;
           width: 100%;
+          height: auto;
           min-height: 10.625rem;
           background: #f3f3f3;
-
-          :deep(img) {
-            display: block;
-            width: 100%;
-            height: auto;
-          }
+          object-fit: contain;
         }
 
         .gallery-desc {
@@ -312,6 +349,17 @@ onMounted(async () => {
   to {
     transform: rotate(360deg);
   }
+}
+
+:global(.el-image-viewer__canvas) {
+  box-sizing: border-box;
+  padding: 3rem 4rem;
+}
+
+:global(.el-image-viewer__img) {
+  max-width: calc(100vw - 8rem);
+  max-height: calc(100vh - 6rem);
+  object-fit: contain;
 }
 
 @media (max-width: 980px) {

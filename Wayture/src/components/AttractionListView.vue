@@ -8,7 +8,10 @@
         :class="{ active: selectedField === f.field }"
         @click="selectedField = f.field"
       >
-        {{ f.label }}
+        <span>{{ f.label }}</span>
+        <span v-if="getSelectedCount(f.field) > 0" class="field-chip-count">
+          {{ getSelectedCount(f.field) }}
+        </span>
       </button>
     </div>
 
@@ -71,6 +74,8 @@ const props = defineProps<{
   selectedIds: number[];
   fieldColorMap: Record<string, string>;
   fixedFields: string[];
+  fieldSelectedCounts: Record<string, number>;
+  totalSelectedCount: number;
 }>();
 
 const emit = defineEmits<{
@@ -102,6 +107,14 @@ const fieldFilters = computed(() => [
   { label: '全部', field: null as string | null },
   ...props.fixedFields.map((field) => ({ label: field, field: field as string | null })),
 ]);
+
+function getSelectedCount(field: string | null): number {
+  if (!field) {
+    return props.totalSelectedCount;
+  }
+
+  return props.fieldSelectedCounts[field] ?? 0;
+}
 
 const filteredPoints = computed(() => {
   if (!selectedField.value) {
@@ -150,8 +163,8 @@ function handleAdd(id: number) {
 
 .field-filter-bar {
   display: flex;
-  gap: 8px;
-  padding: 12px 16px;
+  gap: 0.625rem;
+  padding: 1.25rem 1.5rem 1rem;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -161,21 +174,32 @@ function handleAdd(id: number) {
 }
 
 .field-chip {
-  height: 34px;
-  padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.55);
-  color: #e2e8f0;
-  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.2em;
+  padding: 0 1.5rem;
+  border: 1px solid rgba(185, 197, 139, 0.72);
+  border-radius: 0.75rem;
+  background: rgba(250, 250, 241, 0.92);
+  color: #2b331d;
+  font-size: 1.25rem;
+  font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: inset 0 0 1.25rem rgba(189, 198, 148, 0.16);
+}
+
+.field-chip-count {
+  color: inherit;
+  font-weight: 600;
 }
 
 .field-chip.active {
-  border-color: rgb(255, 183, 0);
-  background: rgb(255, 183, 0);
-  color: #fff;
+  border-color: rgba(196, 206, 153, 0.95);
+  background: rgba(214, 221, 177, 0.94);
+  color: rgba(23, 68, 58, 1);
 }
 
 .image-card-grid {

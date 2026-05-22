@@ -1,30 +1,34 @@
 <template>
-  <section class="flex-row tour-details-shell" style="">
+  <section class="flex-row tour-details-shell">
     <aside class="panel-card p-24 side-panel">
       <div class="flex-row justify-between align-center mb-20">
         <div>
           <h2 class="section-title">游览详情</h2>
           <p class="subtitle">
-            {{ routeSummary || "AI 正在为你规划最佳游览路线。" }}
+            {{ activeRouteSummary || "AI 正在为你规划最佳游览路线。" }}
           </p>
+          <select
+            v-if="allTourList.length > 0"
+            class="route-record-select"
+            :value="activeTourRecordId || ''"
+            @change="selectTourRecord"
+          >
+            <option v-for="record in allTourList" :key="record.id" :value="record.id">
+              {{ record.title }}
+            </option>
+          </select>
         </div>
       </div>
 
       <!-- 加载状态 -->
-      <div v-if="tour.routeLoading.value" class="route-loading">
-        <div class="loading-spinner"></div>
-        <p>正在规划最佳路线...</p>
-      </div>
-
-      <div v-else-if="routeError" class="route-error">
-        <p>{{ routeError }}</p>
+      <div v-if="displayError" class="route-error">
+        <p>{{ displayError }}</p>
         <button
           type="button"
           class="retry-button"
-          :disabled="tour.routeLoading.value"
-          @click="retryPlanRoute"
+          @click="generatePostcard()"
         >
-          重新请求
+          重新生成明信片
         </button>
       </div>
 
@@ -34,7 +38,9 @@
           v-for="(point, index) in orderedPoints"
           :key="point.id"
           class="progress-item"
-          :class="{ active: highlightId === point.id }"
+          :class="{ active: activeHighlightId === point.id }"
+          @mouseenter="setHoverPoint(point.id)"
+          @mouseleave="clearHoverPoint"
           @click="setHighlight(point.id)"
         >
           <div class="step-number">
@@ -62,19 +68,12 @@
           </div>
         </div>
       </div>
-      <!-- <button
-        class="button-primary mt-24"
-        @click="toPostcard"
-        :disabled="tour.routeLoading.value"
-      >
-        去生成明信片
-      </button> -->
     </aside>
     <section class="map-panel panel-card p-24">
       <div class="map-toolbar">
-        <strong>小七幸福一家尺木神奇世界一日游</strong>
+        <strong>{{ activeTourTitle }}</strong>
         <div class="map-actions">
-          <template v-if="postcardImageUrl && !postcardGenerating">
+          <template v-if="postcardImageUrl && !isPostcardPending">
             <span
               class="map-action map-action-download"
               :class="{ disabled: imageDownloading }"
@@ -82,10 +81,12 @@
               >☼ {{ imageDownloading ? "下载中" : "下载图片" }}</span
             >
           </template>
+          <template v-else-if="isPostcardPending">
+            <span class="map-action map-action-confirm disabled">☼ 明信片生成中</span>
+          </template>
           <template v-else>
             <span
               class="map-action map-action-edit"
-              :class="{ disabled: postcardGenerating }"
               @click="editMap"
               >✎ 编辑地图</span
             >
@@ -93,7 +94,7 @@
               class="map-action map-action-confirm"
               :class="{ disabled: !canGeneratePostcard }"
               @click="generatePostcard()"
-              >☼ {{ postcardGenerating ? "生成中" : "确定" }}</span
+              >☼ 生成明信片</span
             >
           </template>
         </div>
@@ -102,7 +103,7 @@
         <div
           ref="downloadContainer"
           :style="{
-            width: postcardGenerating || postcardImageUrl ? '645px' : '1000px',
+            width: isPostcardPending || postcardImageUrl ? '645px' : '1000px',
             margin: '0 auto',
             maxWidth: '100%',
           }"
@@ -120,9 +121,12 @@
               class="map-point"
               :class="{
                 selected: routePlanned && isRoutePoint(point.id),
-                active: highlightId === point.id,
+                active: activeHighlightId === point.id,
               }"
               :style="getMapPointStyle(point)"
+              @mouseenter="setHoverPoint(point.id)"
+              @mouseleave="clearHoverPoint"
+              @click="setHighlight(point.id)"
             >
               <span v-if="routePlanned && isRoutePoint(point.id)">
                 {{ getRouteOrder(point.id) }}
@@ -130,17 +134,16 @@
             </div>
           </div>
           <div
-            v-if="postcardImageUrl || postcardGenerating"
+            v-if="postcardImageUrl || isPostcardPending"
             class="postcard-preview"
           >
-            <!-- <span v-if="postcardGenerating">正在生成明信片...</span> -->
-            <div v-if="postcardGenerating" class="postcard-loading">
+            <div v-if="isPostcardPending" class="postcard-loading">
               <div class="loading-icons">
                 <img :src="icon1" alt="" />
                 <img :src="icon2" alt="" />
                 <img :src="icon3" alt="" />
               </div>
-              <p>内容正在生成中......</p>
+              <p>地图正在生成中，等待时间可能稍长，<br/>你可以稍后查看...</p>
             </div>
             <img v-else :src="postcardImageUrl" alt="明信片" width="100%" />
           </div>
@@ -152,67 +155,74 @@
 
 <script setup lang="ts">
 import html2canvas from "html2canvas";
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useTourStore } from "../composables/useTourStore";
 import icon1 from "../assets/images/icon1.png";
 import icon2 from "../assets/images/icon2.png";
 import icon3 from "../assets/images/icon3.png";
+import { getFieldColor } from "../data/fieldConfig";
 
 const router = useRouter();
 const tour = useTourStore();
 const points = tour.points;
-const selectedPoints = tour.selectedPoints;
-const highlightId = tour.highlightId;
-const routeSummary = tour.routeSummary;
+const allTourList = tour.allTourList;
+const activeTourRecordId = tour.activeTourRecordId;
 const downloadContainer = ref<HTMLElement | null>(null);
-const postcardGenerating = ref(false);
 const imageDownloading = ref(false);
-const postcardImageUrl = ref("");
 const promptParts = ref<string[]>([]);
 const routeError = ref("");
-const routePlanned = ref(false);
+const highlightId = ref<number | null>(null);
+const hoverPointId = ref<number | null>(null);
+let postcardPollTimer: ReturnType<typeof setTimeout> | null = null;
 
+// 当前页面只展示 allTourList 中正在激活的路线记录。
+const activeTourRecord = computed(() =>
+  allTourList.value.find((item) => item.id === activeTourRecordId.value) ?? null,
+);
+
+// 明信片图片地址持久化在当前路线记录中，页面展示时统一做 API base 补全。
+const postcardImageUrl = computed(() =>
+  activeTourRecord.value?.postcardImageUrl
+    ? normalizeImageUrl(activeTourRecord.value.postcardImageUrl)
+    : "",
+);
+
+const isPostcardPending = computed(() => activeTourRecord.value?.postcardStatus === "pending");
+const displayError = computed(() => routeError.value || activeTourRecord.value?.postcardError || "");
+const routePlanned = computed(() => (activeTourRecord.value?.routePlan.length ?? 0) > 0);
+const activeHighlightId = computed(() => hoverPointId.value ?? highlightId.value);
+
+// 生成明信片依赖当前路线记录，不再依赖临时页面状态。
 const canGeneratePostcard = computed(
   () =>
     routePlanned.value &&
-    !tour.routeLoading.value &&
     !routeError.value &&
-    !postcardGenerating.value,
+    !isPostcardPending.value &&
+    !!activeTourRecord.value,
 );
 
-// 按 field 定义颜色
-const fieldColorMap: Record<string, string> = {
-  'MSRA专区':"rgba(168, 27, 128, 1)",
-  '魔法森林': 'rgba(27, 168, 102, 1)',
-  '尖叫小镇': 'rgba(23, 37, 126, 1)',
-  '小勇士的冒险亲子乐园': 'rgba(10, 151, 229, 1)',
-  '冒险者俱乐部': 'rgba(247, 143, 8, 1)',
-  '萌宠乐园': 'rgba(49, 120, 35, 1)'
-};
+// 顶部标题跟随当前路线记录切换。
+const activeTourTitle = computed(() => {
+  const record = allTourList.value.find((item) => item.id === activeTourRecordId.value);
+  return record?.title || "小七幸福一家尺木神奇世界一日游";
+});
 
-function getFieldColor(field: string): string {
-  return fieldColorMap[field] || "#64748B";
-}
+const activeRouteSummary = computed(() => activeTourRecord.value?.routeSummary || "");
 
+// 根据当前路线记录中的 selectedIds 恢复路线顺序。
 const orderedPoints = computed(() => {
-  return tour.selectedIds.value
-    .map((id) => selectedPoints.value.find((item) => item.id === id))
-    .filter((item): item is (typeof selectedPoints.value)[number] =>
+  return (activeTourRecord.value?.selectedIds ?? [])
+    .map((id) => points.value.find((item) => item.id === id))
+    .filter((item): item is (typeof points.value)[number] =>
       Boolean(item),
     );
 });
 
-const currentHighlight = computed(
-  () =>
-    orderedPoints.value.find((item) => item.id === highlightId.value) ??
-    orderedPoints.value[0] ??
-    null,
-);
-
+// 规划接口返回的 tips 仍然从当前路线记录恢复到 routePlan 中读取。
 const tipsMap = computed(() => {
   const map = new Map<number, string>();
-  tour.routePlan.value.forEach((entry: any) => {
+  activeTourRecord.value?.routePlan.forEach((entry: any) => {
     const id = entry.attraction?.id;
     if (id != null && entry.tips) {
       map.set(id, entry.tips);
@@ -230,27 +240,42 @@ function getMapPointStyle(point: (typeof points.value)[number]) {
 }
 
 function getRouteOrder(id: number) {
-  const routeEntry = tour.routePlan.value.find(
+  const routeEntry = activeTourRecord.value?.routePlan.find(
     (entry: any) => entry.attraction?.id === id,
   );
-  const routeIndex = tour.selectedIds.value.indexOf(id);
+  const routeIndex = activeTourRecord.value?.selectedIds.indexOf(id) ?? -1;
   return routeEntry?.order ?? routeIndex + 1;
 }
 
 function isRoutePoint(id: number) {
-  return tour.selectedIds.value.includes(id);
+  return activeTourRecord.value?.selectedIds.includes(id) ?? false;
 }
 
 function setHighlight(id: number) {
-  tour.setHighlight(id);
+  highlightId.value = id;
 }
 
-function toPostcard() {
-  router.push("/postcard");
+function setHoverPoint(id: number) {
+  hoverPointId.value = id;
+}
+
+function clearHoverPoint() {
+  hoverPointId.value = null;
+}
+
+// 切换历史路线时，store 会同步当前 allTourList 激活记录。
+function selectTourRecord(event: Event) {
+  const target = event.target as HTMLSelectElement;
+  const selected = tour.setActiveTourRecord(target.value);
+  if (!selected) return;
+
+  routeError.value = "";
+  stopPostcardPolling();
+  autoGeneratePostcard();
 }
 
 function editMap() {
-  if (postcardGenerating.value) {
+  if (isPostcardPending.value) {
     return;
   }
 
@@ -269,36 +294,150 @@ function normalizeImageUrl(url: string): string {
   return `${tour.apiBase}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
+// 兼容直接返回 image_url，以及任务结果中嵌套返回图片的几种结构。
+function extractPostcardImageUrl(data: any): string {
+  return (
+    data?.image_url ||
+    data?.result?.image_url ||
+    data?.result?.postcard?.image_url ||
+    data?.result?.memory?.images?.[0]?.generated_url ||
+    ""
+  );
+}
+
+// 页面销毁或切换路线时停止旧任务轮询，避免多个定时器同时更新记录。
+function stopPostcardPolling() {
+  if (postcardPollTimer) {
+    clearTimeout(postcardPollTimer);
+    postcardPollTimer = null;
+  }
+}
+
+// 后端图片生成是异步任务，这里按固定间隔查询当前任务状态。
+function schedulePostcardPolling(taskId: string) {
+  stopPostcardPolling();
+  postcardPollTimer = setTimeout(() => {
+    pollPostcardTask(taskId);
+  }, 2000);
+}
+
+// 轮询 /api/tasks/{username}/{task_id}，完成后把结果写回当前路线记录。
+async function pollPostcardTask(taskId: string) {
+  const record = activeTourRecord.value;
+  if (!record || record.postcardTaskId !== taskId) return;
+
+  try {
+    const username = encodeURIComponent(tour.currentUsername.value);
+    const resp = await fetch(`${tour.apiBase}/api/tasks/${username}/${encodeURIComponent(taskId)}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    if (data.status === "completed") {
+      const imageUrl = extractPostcardImageUrl(data);
+      tour.updateTourRecord(record.id, {
+        postcardStatus: "completed",
+        postcardImageUrl: imageUrl,
+        postcardData: data.result ?? data,
+        postcardError: "",
+      });
+      stopPostcardPolling();
+      return;
+    }
+
+    if (data.status === "failed" || data.status === "error") {
+      tour.updateTourRecord(record.id, {
+        postcardStatus: "failed",
+        postcardError: "明信片生成失败，请重试。",
+      });
+      stopPostcardPolling();
+      return;
+    }
+
+    schedulePostcardPolling(taskId);
+  } catch (error) {
+    console.error("查询明信片任务失败:", error);
+    schedulePostcardPolling(taskId);
+  }
+}
+
+// 生成明信片会先把当前路线记录标记为 pending，再根据返回结果直接完成或继续轮询。
 async function generatePostcard(additionPrompt = promptParts.value.join("\n")) {
   if (!canGeneratePostcard.value) {
     return;
   }
 
-  postcardImageUrl.value = "";
-  postcardGenerating.value = true;
+  const record = activeTourRecord.value;
+  if (!record) return;
+
+  routeError.value = "";
+  tour.updateTourRecord(record.id, {
+    postcardStatus: "pending",
+    postcardTaskId: "",
+    postcardImageUrl: "",
+    postcardData: null,
+    postcardError: "",
+  });
   try {
     const resp = await fetch(`${tour.apiBase}/api/generate-postcard`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         username: tour.currentUsername.value,
-        route_plan: tour.routePlan.value,
-        attractions: tour.selectedPoints.value,
+        route_plan: record.routePlan,
+        attractions: record.selectedIds
+          .map((id) => points.value.find((point) => point.id === id))
+          .filter(Boolean),
         addition_prompt: additionPrompt,
       }),
     });
 
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
-    if (!data.image_url) {
-      throw new Error("未返回明信片图片地址");
+    const taskId = data.image_task_id || data.task_id;
+    const imageUrl = extractPostcardImageUrl(data);
+
+    if (imageUrl) {
+      tour.updateTourRecord(record.id, {
+        postcardStatus: "completed",
+        postcardTaskId: taskId || "",
+        postcardImageUrl: imageUrl,
+        postcardData: data,
+        postcardError: "",
+      });
+      return;
     }
-    postcardImageUrl.value = normalizeImageUrl(data.image_url);
+
+    if (!taskId) throw new Error("未返回明信片任务 ID");
+
+    tour.updateTourRecord(record.id, {
+      postcardStatus: "pending",
+      postcardTaskId: taskId,
+      postcardData: data,
+      postcardError: "",
+    });
+    schedulePostcardPolling(taskId);
   } catch (error) {
     console.error("生成明信片出错:", error);
-  } finally {
-    postcardGenerating.value = false;
+    tour.updateTourRecord(record.id, {
+      postcardStatus: "failed",
+      postcardError: "明信片生成失败，请重试。",
+    });
   }
+}
+
+// 新路线首次进入详情页会自动生成；历史路线已有结果则直接复用。
+function autoGeneratePostcard() {
+  const record = activeTourRecord.value;
+  if (!record || !routePlanned.value) return;
+
+  if (record.postcardStatus === "pending" && record.postcardTaskId) {
+    schedulePostcardPolling(record.postcardTaskId);
+    return;
+  }
+
+  if (record.postcardStatus === "completed" && record.postcardImageUrl) return;
+
+  generatePostcard();
 }
 
 async function downloadImage() {
@@ -328,44 +467,13 @@ async function downloadImage() {
 function initPostcardPrompt() {
   const nickname = tour.userSettings.value.nickname;
   const tourStyle = tour.userSettings.value.tourStyle;
-  console.log("初始化明信片提示词，用户设置:", { nickname, tourStyle });
   const parts: string[] = [];
   if (nickname) parts.push(`昵称/标题: ${nickname}`);
   if (tourStyle) parts.push(`游览风格: ${tourStyle}`);
   promptParts.value = parts;
 }
 
-async function requestRoutePlan() {
-  routeError.value = "";
-  routePlanned.value = false;
-  const planned = await tour.planRoute();
-  if (!planned || tour.routePlan.value.length === 0) {
-    routeError.value = "路线规划失败，请重新请求。";
-    return false;
-  }
-
-  routePlanned.value = true;
-
-  if (!highlightId.value) {
-    tour.setHighlight(orderedPoints.value[0]?.id ?? null);
-  }
-  return true;
-}
-
-async function retryPlanRoute() {
-  await requestRoutePlan();
-}
-
 onMounted(async () => {
-  // if (tour.selectedIds.value.length === 0) {
-  //   router.replace('/main');
-  //   return;
-  // }
-
-  // if (tour.points.value.length === 0) {
-  //   await tour.loadTourPoints();
-  // }
-
   initPostcardPrompt();
   
 
@@ -373,13 +481,25 @@ onMounted(async () => {
     await tour.loadTourPoints();
   }
 
-  if (selectedPoints.value.length === 0) {
+  const loadedRecord = activeTourRecordId.value
+    ? tour.setActiveTourRecord(activeTourRecordId.value)
+    : tour.loadLatestTourRecord();
+
+  // 没有可展示的路线记录时回到选点页。
+  if (!loadedRecord || orderedPoints.value.length === 0) {
     router.replace("/main");
     return;
   }
 
-  // 调用 API 规划路线，再根据接口返回的 route/order 重绘选中点
-  await requestRoutePlan();
+  if (!highlightId.value) {
+    highlightId.value = orderedPoints.value[0]?.id ?? null;
+  }
+
+  autoGeneratePostcard();
+});
+
+onBeforeUnmount(() => {
+  stopPostcardPolling();
 });
 </script>
 
@@ -406,22 +526,15 @@ onMounted(async () => {
       margin: 1.25rem 0;
     }
 
-    .route-loading {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-      padding: 3rem 1.5rem;
-
-      .loading-spinner {
-        width: 2.25rem;
-        height: 2.25rem;
-        border: 0.1875rem solid rgba(59, 130, 246, 0.2);
-        border-top-color: #3b82f6;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-      }
+    .route-record-select {
+      width: 100%;
+      min-height: 2.5rem;
+      padding: 0 0.875rem;
+      border: 0.0625rem solid rgba(148, 163, 184, 0.35);
+      border-radius: 0.625rem;
+      background: #fff;
+      color: #111;
+      cursor: pointer;
     }
 
     .route-error {
@@ -471,7 +584,23 @@ onMounted(async () => {
         width: 100%;
         border-radius: 1.5rem;
         color: inherit;
+        cursor: pointer;
+        padding: 0.75rem;
         text-align: left;
+        transition: background-color 0.18s ease, box-shadow 0.18s ease;
+
+        &.active {
+          background: rgba(255, 183, 0, 0.12);
+          box-shadow: inset 0 0 0 0.125rem rgba(255, 183, 0, 0.42);
+
+          .step-number {
+            box-shadow: 0 0 0 0.1875rem rgba(255, 183, 0, 0.72);
+          }
+
+          .content-detail {
+            background: rgba(255, 183, 0, 0.18);
+          }
+        }
 
         .step-number {
           display: grid;
@@ -610,8 +739,20 @@ onMounted(async () => {
         border: 0.125rem solid #fff;
         border-radius: 999rem;
         color: #fff;
-        font-weight: 700;
+        font-size: .875rem;
+        font-weight: 600;
+        line-height: 1;
+        cursor: pointer;
         transform: translate(-50%, -50%);
+        transition: box-shadow 0.18s ease, transform 0.18s ease;
+
+        span {
+          display: grid;
+          place-items: center;
+          width: 100%;
+          height: 100%;
+          line-height: 1;
+        }
 
         &.selected {
           width: 1.75rem;
@@ -622,60 +763,10 @@ onMounted(async () => {
 
         &.active {
           box-shadow: 0 0 0 0.375rem rgba(255, 255, 255, 0.28);
+          transform: translate(-50%, -50%) scale(1.2);
         }
       }
 
-      .info-card-overlay {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        z-index: 10;
-        width: min(32.5rem, calc(100% - 2.5rem));
-        overflow: hidden;
-        border: 0.0625rem solid rgba(148, 163, 184, 0.18);
-        border-radius: 1.75rem;
-        background: rgba(15, 23, 42, 0.97);
-        box-shadow: 0 2.25rem 5rem rgba(12, 30, 50, 0.35);
-        transform: translate(-50%, -50%);
-        backdrop-filter: blur(1.125rem);
-
-        .info-card-image {
-          height: 13.75rem;
-          background-color: #1e293b;
-          background-position: center;
-          background-size: cover;
-        }
-
-        .info-card-body {
-          padding: 1.375rem 1.5rem 1.5rem;
-
-          p {
-            margin: 0;
-            color: #cbd5e1;
-            line-height: 1.8;
-          }
-
-          .info-card-top {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 1rem;
-            margin-bottom: 0.875rem;
-
-            h3 {
-              margin: 0;
-              font-size: 1.25rem;
-              line-height: 1.2;
-            }
-          }
-
-          .info-duration {
-            color: #e0f2fe;
-            font-weight: 700;
-            white-space: nowrap;
-          }
-        }
-      }
     }
 
     .postcard-preview {
@@ -705,6 +796,7 @@ onMounted(async () => {
       }
 
       .postcard-loading {
+        text-align: center;
         padding: 3em;
         display: flex;
         flex-direction: column;
@@ -742,16 +834,6 @@ onMounted(async () => {
       }
   }
 
-  .station-count,
-  .current-label {
-    font-size: 0.95rem;
-  }
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 @keyframes loading-bounce {

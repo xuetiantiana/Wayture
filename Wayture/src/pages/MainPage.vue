@@ -13,9 +13,10 @@
             <div v-for="item in fieldLegend" :key="item.field" class="field-legend-item">
               <span class="field-legend-dot" :style="{ backgroundColor: item.color }"></span>
               <span class="field-legend-name">{{ item.field }}</span>
+              <span v-if="item.count > 0" class="field-legend-count">{{ item.count }}</span>
             </div>
           </div>
-          <div style="overflow: auto;">
+          <div style="overflow: auto;height: 100%;">
             <div class="map-image">
             <img class="map-img" :src="tour.mapImageUrl" alt="游览地图" />
             <button
@@ -45,9 +46,6 @@
             </button>
           </div>
           </div>
-          <ul class="tour-list-case">
-            <li v-for="item in tourCases" :key="item.name" @click="applyTourCase(item.ids)">{{ item.label }}</li>
-          </ul>
           <AttractionDetailModal
             v-if="selectedPoint"
             :point="selectedPoint"
@@ -66,11 +64,22 @@
         :selected-ids="selectedIds"
         :field-color-map="fieldColorMap"
         :fixed-fields="fixedFields"
+        :field-selected-counts="fieldSelectedCounts"
+        :total-selected-count="totalSelectedCount"
         @add="addPoint"
       />
+      <ul class="tour-list-case">
+        <p>Fixed theme route</p>
+        <li v-for="item in tourCases" :key="item.name" @click="applyTourCase(item.ids)">{{ item.label }}</li>
+      </ul>
     </div>
 
     <div class="selected-popup" :class="{ collapsed: !selectedPopupOpen }">
+      <button class="route-map-entry" type="button" @click="goTourDetails">
+        <span class="route-map-title">路线地图</span>
+        <span class="route-map-count">{{ allTourList.length }}</span>
+        <el-icon class="route-map-icon"><ArrowRight /></el-icon>
+      </button>
       <div class="selected-popup-header">
         <div>
           <p class="popup-title">当前游览列表</p>
@@ -84,14 +93,16 @@
         <div v-if="selectedPoints.length === 0" class="popup-empty">点击地图上的点位开始规划</div>
         <ul v-else class="selected-list">
           <li v-for="(point, index) in selectedPoints" :key="point.id" class="selected-item">
-            <span class="item-index">{{ index + 1 }}</span>
+            <span class="item-index" :style="{ backgroundColor: getFieldColor(point.field) }">{{ index + 1 }}</span>
             <span class="item-name">{{ point.name }}</span>
             <span class="delete-icon" aria-label="删除景点" @click="removePoint(point.id)">
               <el-icon><CloseBold /></el-icon>
             </span>
           </li>
         </ul>
-        <button class="button-primary full-width" :disabled="selectedPoints.length === 0" @click="generateTour">生成完整路线 →</button>
+        <button class="button-primary full-width" :disabled="selectedPoints.length === 0 || routeLoading" @click="generateTour">
+          {{ routeLoading ? '路线生成中...' : '生成完整路线 →' }}
+        </button>
       </template>
     </div>
   </section>
@@ -100,11 +111,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { CloseBold } from '@element-plus/icons-vue';
+import { ArrowRight, CloseBold } from '@element-plus/icons-vue';
 import AttractionListView from '../components/AttractionListView.vue';
 import AttractionDetailModal from '../components/AttractionDetailModal.vue';
 import { useTourStore } from '../composables/useTourStore';
 import { calculateTriggerModalStyle } from '../utils/common.js';
+import { fieldColorMap, fixedFields, getFieldColor } from '../data/fieldConfig';
 
 const router = useRouter();
 const tour = useTourStore();
@@ -113,30 +125,13 @@ const points = tour.points;
 const activeTab = tour.activeTab;
 const selectedIds = tour.selectedIds;
 const selectedPoints = tour.selectedPoints;
+const allTourList = tour.allTourList;
 const selectedPointId = ref<number | null>(null);
 const selectedPoint = computed(() => points.value.find((item) => item.id === selectedPointId.value) ?? null);
 const selectedPopupOpen = ref(true);
+const routeLoading = ref(false);
 const mapFrameRef = ref<HTMLElement | null>(null);
 const detailModalStyle = ref<Record<string, string>>({});
-
-// 按 field 定义颜色
-const fieldColorMap: Record<string, string> = {
-  'MSRA专区':"rgba(168, 27, 128, 1)",
-  '魔法森林': 'rgba(27, 168, 102, 1)',
-  '尖叫小镇': 'rgba(23, 37, 126, 1)',
-  '小勇士的冒险亲子乐园': 'rgba(10, 151, 229, 1)',
-  '冒险者俱乐部': 'rgba(247, 143, 8, 1)',
-  '萌宠乐园': 'rgba(49, 120, 35, 1)'
-};
-
-const fixedFields = [
-  'MSRA专区',
-  '魔法森林',
-  '尖叫小镇',
-  '小勇士的冒险亲子乐园',
-  '冒险者俱乐部',
-  '萌宠乐园',
-];
 
 const tourCases = [
   {
@@ -156,10 +151,6 @@ const tourCases = [
   },
 ];
 
-function getFieldColor(field: string): string {
-  return fieldColorMap[field] || '#64748B';
-}
-
 function getPointOrder(id: number): string {
   const order = selectedIds.value.indexOf(id);
   return order >= 0 ? String(order + 1) : '';
@@ -173,11 +164,32 @@ function getPointMarkerColor(id: number, field: string): string {
   return getFieldColor(field);
 }
 
+const fieldSelectedCounts = computed<Record<string, number>>(() => {
+  const counts: Record<string, number> = {};
+
+  fixedFields.forEach((field) => {
+    counts[field] = 0;
+  });
+
+  points.value.forEach((point) => {
+    if (selectedIds.value.includes(point.id)) {
+      counts[point.field] = (counts[point.field] ?? 0) + 1;
+    }
+  });
+
+  return counts;
+});
+
 const fieldLegend = computed(() =>
   fixedFields.map((field) => ({
     field,
     color: getFieldColor(field),
+    count: fieldSelectedCounts.value[field] ?? 0,
   })),
+);
+
+const totalSelectedCount = computed(() =>
+  Object.values(fieldSelectedCounts.value).reduce((total, count) => total + count, 0),
 );
 
 function setTab(tab: 'map' | 'list') {
@@ -195,11 +207,26 @@ function removePoint(id: number) {
   tour.removePoint(id);
 }
 
+function goTourDetails() {
+  router.push('/tour');
+}
+
 async function generateTour() {
-  if (selectedPoints.value.length === 0) {
+  if (selectedPoints.value.length === 0 || routeLoading.value) {
     return;
   }
-  router.push('/tour');
+
+  routeLoading.value = true;
+  try {
+    const planned = await tour.planRoute();
+    if (!planned) {
+      return;
+    }
+
+    router.push('/tour');
+  } finally {
+    routeLoading.value = false;
+  }
 }
 
 function toggleSelectedPopup() {
@@ -261,6 +288,14 @@ onMounted(async () => {
   }
 }
 
+.panel-card{
+  height: 100vh;
+  .map-card, .list-view-host {
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
 .main-tabbar {
   position: absolute;
   top: 1.375rem;
@@ -282,6 +317,7 @@ onMounted(async () => {
     .tab-button {
       min-width: 3.625rem;
       height: 2.625rem;
+      font-size: 1.125em;
       border: none;
       background: transparent;
       color: rgba(23, 68, 58, 1);
@@ -346,6 +382,20 @@ onMounted(async () => {
         overflow: hidden;
         text-overflow: ellipsis;
       }
+
+      .field-legend-count {
+        display: grid;
+        place-items: center;
+        min-width: 1.25rem;
+        height: 1.25rem;
+        margin-left: auto;
+        padding: 0 0.25rem;
+        border-radius: 999rem;
+        color: #fff;
+        font-size: 0.875rem;
+        line-height: 1;
+        box-sizing: border-box;
+      }
     }
 
     .map-image {
@@ -376,10 +426,15 @@ onMounted(async () => {
           z-index: 5;
         }
 
+        &.active {
+          z-index: 6;
+        }
+
         &:hover,
         &.active {
           .map-point {
             border-color: #fff;
+            transform: scale(2);
             box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.26), 0 0.625rem 1.375rem rgba(15, 23, 42, 0.28);
           }
         }
@@ -417,37 +472,48 @@ onMounted(async () => {
       .map-point-label {
         padding: 0.25rem;
         border-radius: 0.5rem;
-        background: rgba(13, 13, 13, 0.4);
+        background: rgba(31, 31, 31, 0.6);
         color: #fff;
         font-weight: 400;
         line-height: 1.2;
         white-space: nowrap;
         position: absolute;
         bottom: calc(100% + 0.375rem);
+        font-size: .875rem;
 
       }
     }
 
-    .tour-list-case{
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      z-index: 12;
-      right: 0.625rem;
+  }
+}
 
-      li {
-        list-style: none;
-        padding: 1em;
-        border-radius: 1rem;
-        background: rgba(40, 40, 40, 1);
-        color: #f8fafc;
-        color: #fff;
-        cursor: pointer;
-      }
-    }
+.tour-list-case{
+  position: absolute;
+  top: 50%;
+  right: 0.625rem;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.6);
+  padding: .5rem;
+  border-radius: 12px;
+  backdrop-filter: blur(6px);
+
+  p {
+    margin: 0;
+    color: #000;
+    font-weight: 400;
+  }
+
+  li {
+    list-style: none;
+    padding: 1em;
+    border-radius: 1rem;
+    background: rgba(40, 40, 40, 1);
+    color: #fff;
+    cursor: pointer;
   }
 }
 
@@ -488,7 +554,7 @@ onMounted(async () => {
   position: fixed;
   right: 0.625rem;
   bottom: 0.625rem;
-  width: min(22.5rem, calc(100% - 2rem));
+  width: min(19rem, calc(100% - 2rem));
   max-width: 22.5rem;
   background: rgba(0,0,0,0.42);
   border: 0.0625rem solid rgba(96, 165, 250, 0.35);
@@ -499,6 +565,40 @@ onMounted(async () => {
 
   &.collapsed {
     width: min(13.75rem, calc(100% - 2rem));
+  }
+
+  .route-map-entry {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    min-height: 3.25rem;
+    padding: 0 1.125rem;
+    border: 0;
+    border-radius: 1rem;
+    background: rgba(31, 31, 31, 0.86);
+    color: #fff;
+    cursor: pointer;
+    text-align: left;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.18);
+
+    .route-map-title {
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    .route-map-count {
+      min-width: 1rem;
+      color: rgba(255, 255, 255, 0.78);
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .route-map-icon {
+      color: #fff;
+      font-size: 1.5rem;
+    }
   }
 
   .selected-popup-header {
@@ -557,7 +657,6 @@ onMounted(async () => {
         display: grid;
         place-items: center;
         border-radius: 100%;
-        background: rgba(230, 85, 44, 1);
         color: #dbeafe;
         font-weight: 700;
         border: 0.125rem solid rgba(255, 255, 255, 1);
@@ -574,6 +673,7 @@ onMounted(async () => {
 
       .delete-icon{
         cursor: pointer;
+        color: rgba(255, 255, 255, .8);
       }
     }
   }

@@ -57,6 +57,18 @@ const messages = ref([
   { role: 'assistant', text: '欢迎使用明信片生成器。正在根据你的游览路线自动生成明信片，你也可以输入额外的风格要求来重新生成。' }
 ]);
 
+const activeTourRecord = computed(() =>
+  tour.allTourList.value.find((item) => item.id === tour.activeTourRecordId.value) ??
+  tour.allTourList.value[0] ??
+  null,
+);
+
+const routePoints = computed(() =>
+  (activeTourRecord.value?.selectedIds ?? [])
+    .map((id) => tour.points.value.find((item) => item.id === id))
+    .filter((item): item is (typeof tour.points.value)[number] => Boolean(item)),
+);
+
 const styleMap: Record<string, string> = {
   family: '全家游',
   solo: '单身游',
@@ -65,7 +77,7 @@ const styleMap: Record<string, string> = {
 };
 
 const postcardText = computed(() => {
-  const highlight = tour.selectedPoints.value.map((item) => `· ${item.name}（${item.cost}）`).join('\n');
+  const highlight = routePoints.value.map((item) => `· ${item.name}（${item.cost}）`).join('\n');
   const message = messages.value.filter((item) => item.role === 'assistant').pop()?.text ?? '期待你的旅行故事。';
   return `${message}\n\n游览路线：\n${highlight}`;
 });
@@ -78,6 +90,12 @@ function normalizeImageUrl(url: string): string {
 }
 
 async function generatePostcard(additionPrompt: string = '') {
+  const record = activeTourRecord.value;
+  if (!record) {
+    messages.value.push({ role: 'assistant', text: '暂无路线数据，请先生成路线。' });
+    return;
+  }
+
   isGenerating.value = true;
   try {
     const resp = await fetch(`${tour.apiBase}/api/generate-postcard`, {
@@ -85,8 +103,8 @@ async function generatePostcard(additionPrompt: string = '') {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         username: tour.currentUsername.value,
-        route_plan: tour.routePlan.value,
-        attractions: tour.selectedPoints.value,
+        route_plan: record.routePlan,
+        attractions: routePoints.value,
         addition_prompt: additionPrompt,
       }),
     });
@@ -122,7 +140,16 @@ function submitPostcard() {
   router.push('/');
 }
 
-onMounted(() => {
+onMounted(async () => {
+  if (tour.points.value.length === 0) {
+    await tour.loadTourPoints();
+  }
+
+  if (!activeTourRecord.value) {
+    router.replace('/main');
+    return;
+  }
+
   const nickname = tour.userSettings.value.nickname;
   const tourStyle = tour.userSettings.value.tourStyle;
   const parts: string[] = [];
