@@ -1,75 +1,66 @@
 <template>
-  <section
-    class="memories-page"
-    aria-label="回忆页面"
-    style="
-      padding-top: 5em;
-      background-color: #fff;
-      height: 100%;
-      box-sizing: border-box;
-    "
-  >
-    <div class="panel-card p-24">
-      <div>
-        <button
-          class="button-secondary"
-          @click="router.push('/memories-gallery')"
-        >
-          查看回忆图册{{
-            tour.gallerySessions.value.length > 0
-              ? ` (${tour.gallerySessions.value.length})`
-              : ""
-          }}
-        </button>
-      </div>
-      <div class="top-title">
-        <div class="img-list">
-          <img :src="icon1" alt="" />
-          <img :src="icon2" alt="" />
-          <img :src="icon3" alt="" />
-        </div>
-        <p>
+  <section class="memories-page" aria-label="回忆页面">
+    <section class="memory-hero">
+      <button class="back-button" type="button" @click="router.back()">
+        &lsaquo;
+      </button>
+
+      <div class="hero-content">
+        <h1>
           Hi, {{ tour.userSettings.value.nickname || tour.currentUsername.value }} Family Passport<br />
           Begin Your Memory Journey
-        </p>
-      </div>
-      <div class="flex-row align-center justify-between wrap">
-        <div>
-          <p>上传照片，选择后生成回忆图册。</p>
+        </h1>
+
+        <div class="passport-preview">
+          <img :src="exampleImage" alt="Memory Passport example" />
+        </div>
+
+        <div class="hero-actions">
+          <button type="button" @click="generateGallery">Memory Journal</button>
+          <button type="button" @click="generateGallery">Memory Album</button>
         </div>
       </div>
+    </section>
 
-      <!-- 加载中 -->
+    <section class="memory-workspace">
+      <header class="workspace-header">
+        <h2>Upload your photos</h2>
+        <nav class="workspace-links" aria-label="回忆导航">
+          <button type="button" @click="router.push('/memories-gallery')">
+            View the journal
+          </button>
+          <span></span>
+          <button type="button" @click="router.push('/memories-gallery')">
+            View album
+          </button>
+        </nav>
+      </header>
+
+      <div
+        class="upload-panel"
+        :class="{ disabled: isUploading }"
+        @click="triggerFileInput"
+      >
+        <div v-if="isUploading" class="spinner small"></div>
+        <div v-else class="upload-icon">+</div>
+        <p>{{ isUploading ? "Uploading..." : "Upload/Drag your photos, Start Creating Your Memories" }}</p>
+        <input
+          ref="fileInput"
+          type="file"
+          multiple
+          accept="image/*"
+          @change="handleUpload"
+          style="display: none"
+        />
+      </div>
+
       <div v-if="isLoading" class="loading-section">
         <div class="spinner"></div>
         <p>加载照片中...</p>
       </div>
 
-      <!-- 照片墙 -->
-      <div v-else>
-        <div class="photo-grid">
-          <!-- 上传按钮 -->
-          <div
-            class="upload-slot"
-            :class="{ disabled: isUploading }"
-            @click="triggerFileInput"
-          >
-            <div class="upload-content">
-              <div v-if="isUploading" class="spinner small"></div>
-              <div v-else class="upload-icon">+</div>
-              <p>{{ isUploading ? "上传中..." : "点击上传照片" }}</p>
-            </div>
-            <input
-              ref="fileInput"
-              type="file"
-              multiple
-              accept="image/*"
-              @change="handleUpload"
-              style="display: none"
-            />
-          </div>
-
-          <!-- 服务器照片列表 -->
+      <template v-else>
+        <div class="photo-strip">
           <div
             v-for="photo in photos"
             :key="photo.index"
@@ -87,37 +78,27 @@
           </div>
         </div>
 
-        <!-- 操作区 -->
-        <div class="action-section">
-          <div class="action-bar">
-            <span class="select-count"
-              >已选 {{ selectedIndices.size }} / {{ photos.length }} 张</span
+        <div class="workspace-footer">
+          <p>最多可上传8张</p>
+          <div class="action-buttons">
+            <button
+              class="button-primary"
+              :disabled="selectedIndices.size === 0 || isGenerating"
+              @click="generateGallery"
             >
-            <div class="action-buttons">
-              <button
-                v-if="photos.length > 0"
-                class="button-secondary"
-                @click="toggleSelectAll"
-              >
-                {{
-                  selectedIndices.size === photos.length ? "取消全选" : "全选"
-                }}
-              </button>
-              <button
-                class="button-primary"
-                :disabled="selectedIndices.size === 0 || isGenerating"
-                @click="generateGallery"
-              >
-                {{ isGenerating ? "生成中..." : "生成手绘" }}
-              </button>
-            </div>
+              {{ isGenerating ? "Generating..." : "Generate Memory Journal" }}
+            </button>
+            <button
+              class="button-primary"
+              :disabled="selectedIndices.size === 0 || isGenerating"
+              @click="generateGallery"
+            >
+              {{ isGenerating ? "Generating..." : "Generate Memory Album" }}
+            </button>
           </div>
-          <p v-if="photos.length === 0" class="hint-text">
-            请先上传至少一张照片
-          </p>
         </div>
-      </div>
-    </div>
+      </template>
+    </section>
 
     <!-- 照片查看模态框 -->
     <div v-if="viewingPhoto" class="photo-modal" @click="viewingPhoto = null">
@@ -135,9 +116,7 @@
 import { ref, reactive, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useTourStore } from "../composables/useTourStore";
-import icon1 from "../assets/images/icon1.png";
-import icon2 from "../assets/images/icon2.png";
-import icon3 from "../assets/images/icon3.png";
+import exampleImage from "../assets/images/example-1.png";
 
 const router = useRouter();
 const tour = useTourStore();
@@ -286,69 +265,320 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .memories-page {
-  padding: 24px;
-}
+  position: relative;
+  z-index: 555;
+  display: grid;
+  grid-template-columns: 1fr 1.05fr;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #fff;
+  color: #111;
 
-.panel-card {
-  max-width: 1060px;
-  margin: 0 auto;
-  width: 80%;
-  display: flex;
-  flex-direction: column;
-  gap: 1em;
-  .top-title {
+  .memory-hero {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 100vh;
+    padding: 4.375rem 7.5% 5rem;
+    background:
+      radial-gradient(circle at 77% 9%, rgba(222, 230, 136, 0.5), transparent 25%),
+      linear-gradient(145deg, #b5bb70 0%, #9aaa55 100%);
+
+    .back-button {
+      position: absolute;
+      top: 2.375rem;
+      left: 3.375rem;
+      display: grid;
+      place-items: center;
+      width: 2rem;
+      height: 2rem;
+      border: 0.0625rem solid rgba(255, 255, 255, 0.22);
+      border-radius: 0.5rem;
+      background: rgba(74, 86, 45, 0.32);
+      color: #fff;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .hero-content {
+      width: 100%;
+      max-width: 35.625rem;
+
+      h1 {
+        margin: 0 0 2.125rem;
+        font-size: 1.75rem;
+        font-weight: 500;
+        line-height: 1.35;
+      }
+
+      .passport-preview {
+        width: 100%;
+        overflow: hidden;
+        border: 0.375rem solid #fff;
+        border-radius: 1.375rem;
+        background: #fff8e9;
+        box-shadow: 0 1.25rem 2.625rem rgba(69, 79, 39, 0.2);
+
+        img {
+          display: block;
+          width: 100%;
+          height: auto;
+        }
+      }
+
+      .hero-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 0.875rem;
+
+        button {
+          min-height: 1.875rem;
+          padding: 0 0.75rem;
+          border: 0;
+          border-radius: 0.375rem;
+          background: rgba(232, 238, 184, 0.66);
+          color: #222;
+          cursor: pointer;
+        }
+      }
+    }
+  }
+
+  .memory-workspace {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    padding: 4.375rem 8.6% 5.125rem;
+    background: #fff;
+
+    .workspace-header,
+    .workspace-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.125rem;
+    }
+
+    .workspace-header {
+      margin-bottom: 1rem;
+
+      h2 {
+        margin: 0;
+        color: #292929;
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+
+      .workspace-links {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+
+        button {
+          border: 0;
+          background: transparent;
+          color: #666;
+          cursor: pointer;
+        }
+
+        span {
+          width: 0.0625rem;
+          height: 0.75rem;
+          background: #d6d6d6;
+        }
+      }
+    }
+
+    .upload-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 11.125rem;
+      margin-bottom: 1.5rem;
+      border: 0.0625rem solid #dedede;
+      border-radius: 1.125rem;
+      background: #f8f8f8;
+      color: #8b8b8b;
+      cursor: pointer;
+
+      &.disabled {
+        cursor: wait;
+        opacity: 0.7;
+      }
+
+      p {
+        margin: 0.5rem 0 0;
+        font-weight: 600;
+      }
+
+      .upload-icon {
+        color: #777;
+        font-size: 2.35rem;
+        font-weight: 300;
+        line-height: 1;
+      }
+    }
+
+    .photo-strip {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(5.125rem, 1fr));
+      gap: 0.625rem;
+      margin-bottom: 1.75rem;
+
+      .photo-item {
+        position: relative;
+        aspect-ratio: 1 / 0.82;
+        overflow: hidden;
+        border: 0.125rem solid transparent;
+        border-radius: 0.375rem;
+        background: #eee;
+        cursor: pointer;
+        transition:
+          border-color 0.2s,
+          transform 0.2s;
+
+        &:hover {
+          transform: translateY(-0.125rem);
+        }
+
+        &.selected {
+          border-color: #e2b82f;
+        }
+
+        img {
+          display: block;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .select-overlay {
+          position: absolute;
+          top: 0.5rem;
+          left: 0.5rem;
+
+          .checkbox {
+            position: relative;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 0.125rem solid rgba(255, 255, 255, 0.8);
+            border-radius: 0.3125rem;
+            background: rgba(0, 0, 0, 0.24);
+
+            &.checked {
+              border-color: #e2b82f;
+              background: #e2b82f;
+
+              &::after {
+                content: "";
+                position: absolute;
+                left: 0.3125rem;
+                top: 0.125rem;
+                width: 0.3125rem;
+                height: 0.625rem;
+                border: solid #fff;
+                border-width: 0 0.125rem 0.125rem 0;
+                transform: rotate(45deg);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .workspace-footer {
+      color: #777;
+
+      p {
+        margin: 0;
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 0.75rem;
+
+        .button-primary {
+          min-height: 2.125rem;
+          padding: 0 1.125rem;
+          border: 0;
+          border-radius: 0.375rem;
+          background: #ffc22f;
+          color: #6b4d00;
+          font-weight: 600;
+          cursor: pointer;
+
+          &:disabled {
+            opacity: 0.48;
+            cursor: not-allowed;
+            filter: grayscale(0.25);
+          }
+        }
+      }
+    }
+  }
+
+  .loading-section {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 3em;
-    
-    p {
-      font-size: 1.5em;
-      font-weight: 500;
-      color: #333;
-      text-align: center;
+    gap: 0.875rem;
+    padding: 2.25rem 0;
+    color: #777;
+  }
+
+  .spinner {
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0.1875rem solid rgba(226, 184, 47, 0.24);
+    border-top-color: #e2b82f;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+
+    &.small {
+      width: 1.5rem;
+      height: 1.5rem;
+      border-width: 0.15625rem;
     }
   }
-  .img-list {
+
+  .photo-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
     display: flex;
-    gap: 12px;
     align-items: center;
     justify-content: center;
-    img {
-      width: 48px;
-    }
-    p {
-      font-size: 1.5em;
-      font-weight: 500;
-      color: #333;
+    background: rgba(0, 0, 0, 0.8);
+
+    .photo-modal-content {
+      position: relative;
+      max-width: 90vw;
+      max-height: 90vh;
+
+      img {
+        max-width: 100%;
+        max-height: 90vh;
+        border-radius: 0.75rem;
+      }
+
+      .close-modal-btn {
+        position: absolute;
+        top: -2.5rem;
+        right: 0;
+        display: grid;
+        place-items: center;
+        width: 2rem;
+        height: 2rem;
+        border: 0;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        cursor: pointer;
+      }
     }
   }
-}
-
-/* --- Loading --- */
-.loading-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 48px 0;
-  gap: 14px;
-  /* color: #94a3b8; */
-}
-
-.spinner {
-  width: 36px;
-  height: 36px;
-  border: 3px solid rgba(59, 130, 246, 0.2);
-  border-top-color: #3b82f6;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-.spinner.small {
-  width: 24px;
-  height: 24px;
-  border-width: 2.5px;
 }
 
 @keyframes spin {
@@ -357,223 +587,57 @@ onMounted(() => {
   }
 }
 
-/* --- Photo grid --- */
-.photo-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
-}
+@media (max-width: 980px) {
+  .memories-page {
+    grid-template-columns: 1fr;
+    overflow: auto;
 
-.upload-slot {
-  aspect-ratio: 1;
-  border: 2px dashed rgba(148, 163, 184, 0.3);
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-}
+    .memory-hero,
+    .memory-workspace {
+      min-height: auto;
+      padding: 4.5rem 1.5rem 2.5rem;
+    }
 
-.upload-slot:hover:not(.disabled) {
-  border-color: #3b82f6;
-  background: rgba(59, 130, 246, 0.1);
-}
+    .memory-hero {
+      .back-button {
+        left: 1.5rem;
+      }
 
-.upload-slot.disabled {
-  cursor: wait;
-  opacity: 0.7;
-}
+      .hero-content {
+        max-width: none;
+      }
+    }
 
-.upload-content {
-  text-align: center;
-  /* color: #94a3b8; */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.upload-icon {
-  font-size: 3rem;
-  font-weight: 300;
-  /* color: #64748b; */
-  line-height: 1;
-}
-
-.upload-content p {
-  margin: 0;
-  font-size: 0.9rem;
-}
-
-/* --- Photo item with selection --- */
-.photo-item {
-  position: relative;
-  aspect-ratio: 1;
-  border-radius: 16px;
-  overflow: hidden;
-  cursor: pointer;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-  border: 3px solid transparent;
-}
-
-.photo-item:hover {
-  transform: scale(1.02);
-}
-
-.photo-item.selected {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
-}
-
-.photo-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-  background: #eee;
-}
-
-.select-overlay {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-}
-
-.checkbox {
-  width: 24px;
-  height: 24px;
-  border-radius: 8px;
-  border: 2px solid rgba(255, 255, 255, 0.7);
-  background: rgba(0, 0, 0, 0.3);
-  transition: all 0.15s;
-  position: relative;
-}
-
-.checkbox.checked {
-  background: #3b82f6;
-  border-color: #3b82f6;
-}
-
-.checkbox.checked::after {
-  content: "";
-  position: absolute;
-  left: 7px;
-  top: 3px;
-  width: 6px;
-  height: 11px;
-  border: solid #fff;
-  border-width: 0 2.5px 2.5px 0;
-  transform: rotate(45deg);
-}
-
-/* --- Action section --- */
-.action-section {
-  margin-top: 8px;
-}
-
-.action-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.select-count {
-  /* color: #94a3b8; */
-  font-size: 0.95rem;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 10px;
-
-  .button-primary:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-    filter: grayscale(0.25);
+    .memory-workspace {
+      .photo-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
   }
-}
-
-.hint-text {
-  margin: 16px 0 0;
-  /* color: #94a3b8; */
-  font-size: 0.9rem;
-  text-align: center;
-}
-
-/* --- Photo modal --- */
-.photo-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
-}
-
-.photo-modal-content {
-  position: relative;
-  max-width: 90vw;
-  max-height: 90vh;
-}
-
-.photo-modal-content img {
-  max-width: 100%;
-  max-height: 90vh;
-  border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-
-.close-modal-btn {
-  position: absolute;
-  top: -40px;
-  right: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  transition: background 0.2s;
-}
-
-.close-modal-btn:hover {
-  background: rgba(239, 68, 68, 0.8);
 }
 
 @media (max-width: 640px) {
-  .photo-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 12px;
-  }
-
   .memories-page {
-    padding: 16px;
-  }
+    .memory-workspace {
+      .workspace-header,
+      .workspace-footer {
+        align-items: flex-start;
+        flex-direction: column;
+      }
 
-  .action-bar {
-    flex-direction: column;
-    align-items: stretch;
-  }
+      .photo-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
 
-  .action-buttons {
-    justify-content: flex-end;
+      .action-buttons {
+        width: 100%;
+        flex-direction: column;
+
+        .button-primary {
+          width: 100%;
+        }
+      }
+    }
   }
 }
 </style>

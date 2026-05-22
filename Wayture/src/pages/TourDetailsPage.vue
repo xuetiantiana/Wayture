@@ -108,8 +108,26 @@
           }"
           class="dowmload-container"
         >
-          <div class="map-frame tour-map" :style="mapFrameStyle">
-            <canvas ref="mapCanvas" class="map-canvas"></canvas>
+          <div class="map-frame tour-map">
+            <img
+              class="map-image"
+              :src="tour.mapImageUrl"
+              alt="园区地图"
+            />
+            <div
+              v-for="point in points"
+              :key="point.id"
+              class="map-point"
+              :class="{
+                selected: routePlanned && isRoutePoint(point.id),
+                active: highlightId === point.id,
+              }"
+              :style="getMapPointStyle(point)"
+            >
+              <span v-if="routePlanned && isRoutePoint(point.id)">
+                {{ getRouteOrder(point.id) }}
+              </span>
+            </div>
           </div>
           <div
             v-if="postcardImageUrl || postcardGenerating"
@@ -134,7 +152,7 @@
 
 <script setup lang="ts">
 import html2canvas from "html2canvas";
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useTourStore } from "../composables/useTourStore";
 import icon1 from "../assets/images/icon1.png";
@@ -147,22 +165,13 @@ const points = tour.points;
 const selectedPoints = tour.selectedPoints;
 const highlightId = tour.highlightId;
 const routeSummary = tour.routeSummary;
-const mapCanvas = ref<HTMLCanvasElement | null>(null);
 const downloadContainer = ref<HTMLElement | null>(null);
 const postcardGenerating = ref(false);
 const imageDownloading = ref(false);
 const postcardImageUrl = ref("");
 const promptParts = ref<string[]>([]);
-const mapAspectRatio = ref("auto");
 const routeError = ref("");
 const routePlanned = ref(false);
-const mapImageElement = new Image();
-mapImageElement.crossOrigin = "anonymous";
-mapImageElement.src = tour.mapImageUrl;
-
-const mapFrameStyle = computed(() => ({
-  aspectRatio: mapAspectRatio.value,
-}));
 
 const canGeneratePostcard = computed(
   () =>
@@ -212,71 +221,24 @@ const tipsMap = computed(() => {
   return map;
 });
 
-async function drawMap() {
-  const canvas = mapCanvas.value;
-  if (!canvas) {
-    return;
-  }
+function getMapPointStyle(point: (typeof points.value)[number]) {
+  return {
+    left: `${point.location[0]}%`,
+    top: `${point.location[1]}%`,
+    backgroundColor: getFieldColor(point.field),
+  };
+}
 
-  if (!mapImageElement.complete) {
-    mapImageElement.onload = () => {
-      void drawMap();
-    };
-    return;
-  }
+function getRouteOrder(id: number) {
+  const routeEntry = tour.routePlan.value.find(
+    (entry: any) => entry.attraction?.id === id,
+  );
+  const routeIndex = tour.selectedIds.value.indexOf(id);
+  return routeEntry?.order ?? routeIndex + 1;
+}
 
-  if (mapImageElement.naturalWidth && mapImageElement.naturalHeight) {
-    const nextAspectRatio = `${mapImageElement.naturalWidth} / ${mapImageElement.naturalHeight}`;
-    if (mapAspectRatio.value !== nextAspectRatio) {
-      mapAspectRatio.value = nextAspectRatio;
-      await nextTick();
-    }
-  }
-
-  const rect = canvas.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    return;
-  }
-
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, rect.width, rect.height);
-  ctx.drawImage(mapImageElement, 0, 0, rect.width, rect.height);
-
-  points.value.forEach((point) => {
-    const x = (point.location[0] / 100) * rect.width;
-    const y = (point.location[1] / 100) * rect.height;
-    const routeEntry = tour.routePlan.value.find(
-      (entry: any) => entry.attraction?.id === point.id,
-    );
-    const routeIndex = tour.selectedIds.value.indexOf(point.id);
-    const routeOrder = routeEntry?.order ?? routeIndex + 1;
-    const isRoutePoint = !!routeEntry || routeIndex >= 0;
-    const radius = isRoutePoint ? 14 : 7;
-
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fillStyle = getFieldColor(point.field);
-    ctx.fill();
-    ctx.lineWidth = isRoutePoint ? 3 : 2;
-    ctx.strokeStyle = isRoutePoint ? "#ffffff" : "rgba(255, 255, 255, 0.78)";
-    ctx.stroke();
-
-    if (isRoutePoint) {
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "700 13px Inter, ui-sans-serif, system-ui, sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      const metrics = ctx.measureText(String(routeOrder));
-      const textOffsetY =
-        (metrics.actualBoundingBoxAscent - metrics.actualBoundingBoxDescent) /
-        2;
-      ctx.fillText(String(routeOrder), x, y + textOffsetY);
-    }
-  });
+function isRoutePoint(id: number) {
+  return tour.selectedIds.value.includes(id);
 }
 
 function setHighlight(id: number) {
@@ -363,10 +325,6 @@ async function downloadImage() {
   }
 }
 
-function resizeCanvas() {
-  drawMap();
-}
-
 function initPostcardPrompt() {
   const nickname = tour.userSettings.value.nickname;
   const tourStyle = tour.userSettings.value.tourStyle;
@@ -388,13 +346,9 @@ async function requestRoutePlan() {
 
   routePlanned.value = true;
 
-  await nextTick();
-  drawMap();
-
   if (!highlightId.value) {
     tour.setHighlight(orderedPoints.value[0]?.id ?? null);
   }
-  await drawMap();
   return true;
 }
 
@@ -413,6 +367,7 @@ onMounted(async () => {
   // }
 
   initPostcardPrompt();
+  
 
   if (points.value.length === 0) {
     await tour.loadTourPoints();
@@ -425,23 +380,13 @@ onMounted(async () => {
 
   // 调用 API 规划路线，再根据接口返回的 route/order 重绘选中点
   await requestRoutePlan();
-  // window.addEventListener("resize", resizeCanvas);
-});
-
-onUnmounted(() => {
-  // window.removeEventListener("resize", resizeCanvas);
-});
-
-watch([points, orderedPoints, highlightId], async () => {
-  await nextTick();
-  drawMap();
 });
 </script>
 
 <style scoped lang="scss">
 .tour-details-shell {
   position: relative;
-  gap: 24px;
+  gap: 1.5rem;
   box-sizing: border-box;
   height: 100vh;
   padding: 4em 2em 2em;
@@ -453,12 +398,12 @@ watch([points, orderedPoints, highlightId], async () => {
     display: flex;
     flex-direction: column;
     width: 27%;
-    min-width: 400px;
-    max-width: 600px;
+    min-width: 25rem;
+    max-width: 37.5rem;
     overflow: auto;
 
     .subtitle {
-      margin: 20px 0;
+      margin: 1.25rem 0;
     }
 
     .route-loading {
@@ -466,13 +411,13 @@ watch([points, orderedPoints, highlightId], async () => {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 16px;
-      padding: 48px 24px;
+      gap: 1rem;
+      padding: 3rem 1.5rem;
 
       .loading-spinner {
-        width: 36px;
-        height: 36px;
-        border: 3px solid rgba(59, 130, 246, 0.2);
+        width: 2.25rem;
+        height: 2.25rem;
+        border: 0.1875rem solid rgba(59, 130, 246, 0.2);
         border-top-color: #3b82f6;
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
@@ -483,9 +428,9 @@ watch([points, orderedPoints, highlightId], async () => {
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      gap: 14px;
-      padding: 24px;
-      border-radius: 18px;
+      gap: 0.875rem;
+      padding: 1.5rem;
+      border-radius: 1.125rem;
       background: rgba(239, 68, 68, 0.08);
       color: #991b1b;
 
@@ -494,10 +439,10 @@ watch([points, orderedPoints, highlightId], async () => {
       }
 
       .retry-button {
-        min-height: 36px;
-        padding: 0 16px;
+        min-height: 2.25rem;
+        padding: 0 1rem;
         border: 0;
-        border-radius: 8px;
+        border-radius: 0.5rem;
         background: rgb(255, 183, 0);
         color: #fff;
         font-weight: 700;
@@ -521,20 +466,20 @@ watch([points, orderedPoints, highlightId], async () => {
 
       .progress-item {
         display: grid;
-        grid-template-columns: 44px 1fr;
-        gap: 14px;
+        grid-template-columns: 2.75rem 1fr;
+        gap: 0.875rem;
         width: 100%;
-        border-radius: 24px;
+        border-radius: 1.5rem;
         color: inherit;
         text-align: left;
 
         .step-number {
           display: grid;
           place-items: center;
-          width: 44px;
-          height: 44px;
+          width: 2.75rem;
+          height: 2.75rem;
           overflow: hidden;
-          border-radius: 16px;
+          border-radius: 1rem;
           background: rgba(59, 130, 246, 0.14);
           color: #eff6ff;
           font-weight: 700;
@@ -550,29 +495,28 @@ watch([points, orderedPoints, highlightId], async () => {
         .step-content {
           strong {
             display: block;
-            margin-bottom: 6px;
-            font-size: 1rem;
+            margin-bottom: 0.375rem;
           }
 
           .label {
             padding: 0.2em 0.4em;
-            border-radius: 4px;
+            border-radius: 0.25rem;
             color: green;
-            font-size: 12px;
+            font-size: 0.75rem;
           }
 
           .content-detail {
             padding: 0.5em 0.8em;
-            border-radius: 16px;
+            border-radius: 1rem;
             background: rgba(59, 130, 246, 0.08);
             font-size: 0.875em;
 
             .step-description {
-              margin-top: 8px;
+              margin-top: 0.5rem;
             }
 
             .step-tips {
-              margin-top: 8px;
+              margin-top: 0.5rem;
             }
           }
         }
@@ -591,8 +535,8 @@ watch([points, orderedPoints, highlightId], async () => {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
-      padding: 14px 18px;
+      gap: 1rem;
+      padding: 0.875rem 1.125rem;
       background: #f7f7f7;
 
       strong {
@@ -603,15 +547,15 @@ watch([points, orderedPoints, highlightId], async () => {
       .map-actions {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 0.625rem;
 
         .map-action {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-height: 36px;
-          padding: 0 14px;
-          border-radius: 7px;
+          min-height: 2.25rem;
+          padding: 0 0.875rem;
+          border-radius: 0.4375rem;
           font-size: 0.92rem;
           font-weight: 700;
           cursor: pointer;
@@ -620,19 +564,19 @@ watch([points, orderedPoints, highlightId], async () => {
           &.map-action-edit {
             background: #fff;
             color: #4b5563;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+            box-shadow: 0 0.125rem 0.5rem rgba(15, 23, 42, 0.18);
           }
 
           &.map-action-confirm {
             background: #e2b82f;
             color: #fff;
-            box-shadow: 0 2px 8px rgba(161, 111, 0, 0.22);
+            box-shadow: 0 0.125rem 0.5rem rgba(161, 111, 0, 0.22);
           }
 
           &.map-action-download {
             background: rgb(255, 183, 0);
             color: #fff;
-            box-shadow: 0 2px 8px rgba(161, 111, 0, 0.22);
+            box-shadow: 0 0.125rem 0.5rem rgba(161, 111, 0, 0.22);
           }
 
           &.disabled {
@@ -647,41 +591,63 @@ watch([points, orderedPoints, highlightId], async () => {
 
     .map-frame {
       position: relative;
-      // min-height: 560px;
       overflow: hidden;
       margin: 0 auto;
 
-      .map-canvas {
+      .map-image {
         display: block;
         width: 100%;
-        height: 100%;
+        height: auto;
       }
 
-      
+      .map-point {
+        position: absolute;
+        z-index: 2;
+        display: grid;
+        place-items: center;
+        width: 0.875rem;
+        height: 0.875rem;
+        border: 0.125rem solid #fff;
+        border-radius: 999rem;
+        color: #fff;
+        font-weight: 700;
+        transform: translate(-50%, -50%);
+
+        &.selected {
+          width: 1.75rem;
+          height: 1.75rem;
+          border-width: 0.1875rem;
+          border-color: #fff;
+        }
+
+        &.active {
+          box-shadow: 0 0 0 0.375rem rgba(255, 255, 255, 0.28);
+        }
+      }
 
       .info-card-overlay {
         position: absolute;
         left: 50%;
         top: 50%;
         z-index: 10;
-        width: min(520px, calc(100% - 40px));
+        width: min(32.5rem, calc(100% - 2.5rem));
         overflow: hidden;
-        border: 1px solid rgba(148, 163, 184, 0.18);
-        border-radius: 28px;
+        border: 0.0625rem solid rgba(148, 163, 184, 0.18);
+        border-radius: 1.75rem;
         background: rgba(15, 23, 42, 0.97);
-        box-shadow: 0 36px 80px rgba(12, 30, 50, 0.35);
+        box-shadow: 0 2.25rem 5rem rgba(12, 30, 50, 0.35);
         transform: translate(-50%, -50%);
-        backdrop-filter: blur(18px);
+        backdrop-filter: blur(1.125rem);
 
         .info-card-image {
-          height: 220px;
+          height: 13.75rem;
           background-color: #1e293b;
           background-position: center;
           background-size: cover;
         }
 
         .info-card-body {
-          padding: 22px 24px 24px;
+          padding: 1.375rem 1.5rem 1.5rem;
 
           p {
             margin: 0;
@@ -693,8 +659,8 @@ watch([points, orderedPoints, highlightId], async () => {
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-            gap: 16px;
-            margin-bottom: 14px;
+            gap: 1rem;
+            margin-bottom: 0.875rem;
 
             h3 {
               margin: 0;
@@ -713,39 +679,39 @@ watch([points, orderedPoints, highlightId], async () => {
     }
 
     .postcard-preview {
-        position: relative;
+      position: relative;
       aspect-ratio: 645 / 456;
-        background: #fff;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+
+      &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border: 0.125rem dashed rgba(198, 196, 196, 1);
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      img {
+        display: block;
+        max-width: 100%;
+        max-height: 100%;
+        position: relative;
+        z-index: 2;
+      }
+
+      .postcard-loading {
+        padding: 3em;
         display: flex;
         flex-direction: column;
-        justify-content: center;
         align-items: center;
-
-        &::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          border: 2px dashed rgba(198, 196, 196, 1);
-          pointer-events: none;
-          z-index:  1;
-        }
-
-        img {
-          display: block;
-          max-width: 100%;
-          max-height: 100%;
-          position: relative;
-          z-index: 2;
-        }
-
-        .postcard-loading {
-          padding: 3em;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 14px;
-          color: #333;
+        justify-content: center;
+        gap: 0.875rem;
+        color: #333;
 
           p {
             margin: 0;
@@ -755,11 +721,11 @@ watch([points, orderedPoints, highlightId], async () => {
             display: flex;
             align-items: flex-end;
             justify-content: center;
-            gap: 14px;
+            gap: 0.875rem;
 
             img {
-              width: 40px;
-              height: 40px;
+              width: 2.5rem;
+              height: 2.5rem;
               object-fit: contain;
               animation: loading-bounce 0.9s ease-in-out infinite;
 
@@ -772,7 +738,7 @@ watch([points, orderedPoints, highlightId], async () => {
               }
             }
           }
-        }
+      }
       }
   }
 
@@ -796,7 +762,7 @@ watch([points, orderedPoints, highlightId], async () => {
   }
 
   40% {
-    transform: translateY(-10px);
+    transform: translateY(-0.625rem);
   }
 }
 

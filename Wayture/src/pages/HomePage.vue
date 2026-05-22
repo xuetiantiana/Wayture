@@ -51,7 +51,7 @@ function memories() {
   display: grid;
   place-items: center;
   border-radius: 0;
-  padding: 56px 100px;
+  padding: 3.5rem 6.25rem;
   background: transparent;
   border: none;
   box-shadow: none;
@@ -82,9 +82,9 @@ function memories() {
     bottom: 10%;
     transform: translate(-50%, 0);
     text-align: center;
-    max-width: min(840px, 40%);
+    max-width: min(52.5rem, 40%);
     color: #14100d;
-    margin-top: clamp(28px, 8vh, 96px);
+    margin-top: clamp(1.75rem, 8vh, 6rem);
 
     .hero-kicker {
       margin: 0;
@@ -93,50 +93,49 @@ function memories() {
       letter-spacing: 0.12em;
       text-transform: uppercase;
       font-size: clamp(1.2rem, 2vw, 2rem);
-      text-shadow: 0 2px 12px rgba(255, 243, 199, 0.26);
+      text-shadow: 0 0.125rem 0.75rem rgba(255, 243, 199, 0.26);
     }
 
     .hero-logo {
       display: block;
       width: 100%;
       max-width: 100%;
-      margin: 2px auto 18px;
-      filter: drop-shadow(0 2px 6px rgba(35, 26, 15, 0.26));
+      margin: 0.125rem auto 1.125rem;
+      filter: drop-shadow(0 0.125rem 0.375rem rgba(35, 26, 15, 0.26));
     }
 
     .hero-caption {
-      margin: 0 0 30px;
+      margin: 0 0 2em;
       color: #0f0e0a;
       font-size: clamp(1.9rem, 2.3vw, 3rem);
       font-weight: 400;
-      margin-bottom: 2em;
     }
 
     .hero-actions {
       display: flex;
-      gap: 14px;
+      gap: 0.875rem;
       justify-content: center;
       flex-wrap: wrap;
 
       .hero-button {
-        min-width: 178px;
-        border: 1px solid rgba(53, 60, 52, 0.25);
+        min-width: 11.125rem;
+        border: 0.0625rem solid rgba(53, 60, 52, 0.25);
         color: #425042;
         font-weight: 600;
-        padding: 14px 26px;
-        border-radius: 999px;
+        padding: 0.875rem 1.625rem;
+        border-radius: 999rem;
         transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 
         &.button-glass {
           background: rgba(229, 235, 208, 0.74);
-          backdrop-filter: blur(5px);
-          -webkit-backdrop-filter: blur(5px);
+          backdrop-filter: blur(0.3125rem);
+          -webkit-backdrop-filter: blur(0.3125rem);
           font-size: 1.25rem;
         }
 
         &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 12px 24px rgba(25, 41, 24, 0.18);
+          transform: translateY(-0.125rem);
+          box-shadow: 0 0.75rem 1.5rem rgba(25, 41, 24, 0.18);
           background: rgba(238, 243, 220, 0.86);
         }
       }
@@ -146,25 +145,25 @@ function memories() {
 
 @media (max-width: 960px) {
   .hero-card {
-    min-height: calc(100vh - 72px);
-    padding: 38px 24px;
+    min-height: calc(100vh - 4.5rem);
+    padding: 2.375rem 1.5rem;
 
     .hero-content {
-      max-width: min(640px, calc(100vw - 32px));
-      margin-top: 16px;
+      max-width: min(40rem, calc(100vw - 2rem));
+      margin-top: 1rem;
 
       .hero-caption {
         font-size: clamp(1.5rem, 5.8vw, 2.1rem);
-        margin-bottom: 24px;
+        margin-bottom: 1.5rem;
       }
 
       .hero-logo {
-        width: min(560px, calc(100vw - 32px));
+        width: min(35rem, calc(100vw - 2rem));
       }
 
       .hero-actions {
         .hero-button {
-          min-width: 160px;
+          min-width: 10rem;
         }
       }
     }

@@ -1,8 +1,14 @@
 <template>
-  <section class="gallery-page flex-row" style="padding-top: 5em;">
-    <aside class="panel-card p-24 session-sidebar">
-      <h2 class="section-title">回忆图册</h2>
-      <p class="subtitle">选择一次回忆查看详情。</p>
+  <section class="gallery-page">
+    <aside class="session-sidebar">
+      <button class="back-button" type="button" @click="router.push('/memories')">
+        &lsaquo;
+      </button>
+
+      <div class="album-label">
+        <el-icon class="album-icon"><Clock /></el-icon>
+        <span>Memory Album</span>
+      </div>
 
       <div v-if="isLoadingSessions" class="loading-section">
         <div class="spinner"></div>
@@ -17,28 +23,37 @@
           @click="activeSessionId = session.id"
         >
           <strong>{{ session.title }}</strong>
-          <span class="session-meta">{{ formatDate(session.created_at) }} · {{ session.generated_image_count }} 张</span>
+          <span class="session-meta">
+            {{ formatDate(session.created_at) }} · 共{{ session.generated_image_count }}张
+          </span>
         </button>
       </div>
-      <button class="button-secondary mt-24" @click="router.push('/memories')">返回上传照片</button>
     </aside>
 
-    <section class="panel-card p-24 gallery-main">
+    <section class="gallery-main">
       <template v-if="activeSession">
-        <div class="flex-row align-center justify-between mb-20">
+        <div class="gallery-header">
           <div>
-            <h2 class="section-title">{{ activeSession.title }}</h2>
-            <p class="subtitle">{{ formatDate(activeSession.created_at) }} · 共 {{ activeSession.generated_image_count }} 张</p>
+            <h1>{{ activeSession.title }}</h1>
+            <p>{{ formatDate(activeSession.created_at) }} · 共{{ activeSession.generated_image_count }}张</p>
           </div>
+          <button class="download-button" type="button">↓ 下载</button>
         </div>
-        <div class="gallery-grid">
+        <div class="gallery-strip">
           <div
-            v-for="img in activeSession.images"
+            v-for="(img, index) in activeSession.images"
             :key="img.index"
             class="gallery-item"
-            @click="viewingPhoto = normalizeUrl(img.generated_url)"
           >
-            <img :src="normalizeUrl(img.generated_url)" :alt="img.description || '回忆'" />
+            <el-image
+              class="gallery-image"
+              :src="normalizeUrl(img.generated_url)"
+              :alt="img.description || '回忆'"
+              :preview-src-list="activeSession.images.map((item) => normalizeUrl(item.generated_url))"
+              :initial-index="index"
+              fit="contain"
+              preview-teleported
+            />
             <p v-if="img.description" class="gallery-desc">{{ img.description }}</p>
           </div>
         </div>
@@ -52,18 +67,14 @@
       </div>
     </section>
 
-    <div v-if="viewingPhoto" class="photo-modal" @click="viewingPhoto = null">
-      <div class="photo-modal-content" @click.stop>
-        <img :src="viewingPhoto" alt="照片" />
-        <button class="close-modal-btn" @click="viewingPhoto = null">&times;</button>
-      </div>
-    </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { ElImage } from 'element-plus';
+import { Clock } from '@element-plus/icons-vue';
 import { useTourStore, type GallerySession } from '../composables/useTourStore';
 
 const router = useRouter();
@@ -75,7 +86,6 @@ const activeSessionId = ref<string | null>(sessions.value[0]?.id ?? null);
 const activeSession = computed<GallerySession | undefined>(
   () => sessions.value.find((s) => s.id === activeSessionId.value)
 );
-const viewingPhoto = ref<string | null>(null);
 
 function normalizeUrl(url: string): string {
   return tour.normalizeImageUrl(url);
@@ -96,193 +106,249 @@ onMounted(async () => {
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .gallery-page {
-  gap: 24px;
-  padding: 50px;
-  /* max-width: 1060px; */
-  margin: 0 auto;
-  /* width: 80%; */
-}
+  position: relative;
+  z-index: 555;
+  display: grid;
+  grid-template-columns: 20rem 1fr;
+  min-height: 100vh;
+  background: #fff;
+  color: #222;
 
-.session-sidebar {
-  flex: 0 0 320px;
-  min-width: 260px;
-}
+  .session-sidebar {
+    box-sizing: border-box;
+    min-height: 100vh;
+    padding: 1.4rem 1.2rem;
+    background: #f4f4f4;
 
-.gallery-main {
-  flex: 1;
-}
+    .back-button {
+      display: grid;
+      place-items: center;
+      width: 2.125rem;
+      height: 2.125rem;
+      margin-bottom: 2rem;
+      border: 0;
+      border-radius: 0.5625rem;
+      background: #e9e9e9;
+      color: #1f2933;
+      line-height: 1;
+      cursor: pointer;
+    }
 
-.subtitle {
-  color: #94a3b8;
-  margin-top: 4px;
-}
+    .album-label {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      margin-bottom: 1.25rem;
+      padding: 0 0.125rem;
+      color: #2f2f2f;
+      font-weight: 700;
+      font-size: 1.125rem;
 
-.loading-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 32px 0;
-  gap: 12px;
-  color: #94a3b8;
-}
+      .album-icon {
+        color: #777;
+      }
+    }
 
-.spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid rgba(59, 130, 246, 0.2);
-  border-top-color: #3b82f6;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+    .session-list {
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+      max-height: calc(100vh - 8.125rem);
+      overflow-y: auto;
+
+      .session-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+        min-height: 3rem;
+        padding: 0.625rem 0.75rem;
+        border: 0;
+        border-radius: 0.5rem;
+        background: transparent;
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.18s;
+
+        strong {
+          font-weight: 500;
+        }
+
+        &:hover {
+          background: #ececec;
+        }
+
+        &.active {
+          background: #e4e4e4;
+        }
+
+        .session-meta {
+          color: #666;
+          font-size: 0.875rem;
+        }
+      }
+    }
+  }
+
+  .gallery-main {
+    box-sizing: border-box;
+    min-width: 0;
+    padding: 2rem 1.75rem;
+
+    .gallery-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1.125rem;
+      margin-bottom: 1.875rem;
+
+      h1 {
+        margin: 0 0 0.4375rem;
+        color: #292929;
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+
+      p {
+        margin: 0;
+        color: #333;
+      }
+
+      .download-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.125rem;
+        padding: 0 0.8125rem;
+        border: 0;
+        border-radius: 0.375rem;
+        background: #e2b82f;
+        color: #fff;
+        font-weight: 600;
+        box-shadow: 0 0.25rem 0.625rem rgba(139, 104, 0, 0.22);
+        cursor: pointer;
+      }
+    }
+
+    .gallery-strip {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.25rem;
+      overflow-x: auto;
+      padding-bottom: 0.625rem;
+
+      .gallery-item {
+        flex: 0 0 19.0625rem;
+        overflow: hidden;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        cursor: pointer;
+        transition: transform 0.2s;
+        background: #f9f9f9;
+        border-radius: 0.5rem;
+
+        &:hover {
+          transform: translateY(-0.125rem);
+        }
+
+        .gallery-image {
+          display: block;
+          width: 100%;
+          min-height: 10.625rem;
+          background: #f3f3f3;
+
+          :deep(img) {
+            display: block;
+            width: 100%;
+            height: auto;
+          }
+        }
+
+        .gallery-desc {
+          margin: 0;
+          padding: 0.875rem 1rem;
+          line-height: 1.6;
+          font-size: 0.875rem;
+        }
+      }
+    }
+  }
+
+  .loading-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 2rem 0;
+    color: #94a3b8;
+  }
+
+  .spinner {
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 0.1875rem solid rgba(59, 130, 246, 0.2);
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    padding: 5rem 1.5rem;
+    color: #94a3b8;
+    text-align: center;
+  }
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.session-list {
-  display: grid;
-  gap: 10px;
-  margin: 20px 0; 
-  max-height: 520px;
-  overflow-y: auto;
-}
-
-.session-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 100%;
-  padding: 16px 18px;
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  border-radius: 18px;
-  background: #fff;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.18s, background 0.18s;
-}
-
-.session-item:hover,
-.session-item.active {
-  border-color: rgba(59, 130, 246, 0.45);
-  background: rgba(59, 130, 246, 0.12);
-}
-
-.session-meta {
-  font-size: 0.85rem;
-  color: #94a3b8;
-}
-
-.gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 20px;
-  margin-top: 30px;
-}
-
-.gallery-item {
-  border-radius: 16px;
-  overflow: hidden;
-  background: #eee;
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  cursor: pointer;
-  transition: transform 0.2s, border-color 0.2s;
-}
-
-.gallery-item:hover {
-  transform: translateY(-2px);
-  border-color: rgba(59, 130, 246, 0.3);
-}
-
-.gallery-item img {
-  width: 100%;
-  /* aspect-ratio: 4 / 3;
-  object-fit: cover; */
-  display: block;
-}
-
-.gallery-desc {
-  margin: 0;
-  padding: 14px 16px;
-  font-size: 0.92rem;
-  line-height: 1.6;
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 24px;
-  gap: 20px;
-  color: #94a3b8;
-  text-align: center;
-}
-
-/* --- Photo modal --- */
-.photo-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
-}
-
-.photo-modal-content {
-  position: relative;
-  max-width: 90vw;
-  max-height: 90vh;
-}
-
-.photo-modal-content img {
-  max-width: 100%;
-  max-height: 90vh;
-  border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-
-.close-modal-btn {
-  position: absolute;
-  top: -40px;
-  right: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  transition: background 0.2s;
-}
-
-.close-modal-btn:hover {
-  background: rgba(239, 68, 68, 0.8);
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 980px) {
   .gallery-page {
-    flex-direction: column;
-  }
-  .session-sidebar {
-    width: 100%;
+    grid-template-columns: 1fr;
+
+    .session-sidebar {
+      min-height: auto;
+    }
   }
 }
 
 @media (max-width: 640px) {
-  .gallery-grid {
-    grid-template-columns: 1fr;
+  .gallery-page {
+    .gallery-main {
+      padding: 1.5rem 1.125rem;
+
+      .gallery-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .gallery-strip {
+        flex-direction: column;
+        gap: 1.125rem;
+        overflow-x: visible;
+
+        .gallery-item {
+          flex: none;
+          width: 100%;
+
+          .gallery-image {
+            min-height: 52vw;
+          }
+        }
+      }
+    }
   }
 }
 </style>

@@ -134,92 +134,110 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .postcard-shell {
   position: relative;
-  gap: 24px;
+  gap: 1.5rem;
+
+  .left-panel {
+    flex: 0 0 25rem;
+    min-width: 18.75rem;
+  }
+
+  .postcard-panel {
+    flex: 1;
+  }
+
+  .chat-panel {
+    display: grid;
+    gap: 0.875rem;
+    max-height: 32.5rem;
+    overflow-y: auto;
+    margin-bottom: 1.25rem;
+
+    .chat-bubble {
+      padding: 1rem;
+      border: 0.0625rem solid rgba(148, 163, 184, 0.12);
+      border-radius: 1.375rem;
+      background: rgba(15, 23, 42, 0.9);
+
+      &.user {
+        background: rgba(59, 130, 246, 0.14);
+      }
+
+      &.assistant {
+        background: rgba(75, 85, 99, 0.9);
+      }
+
+      strong {
+        display: block;
+        margin-bottom: 0.5rem;
+      }
+    }
+  }
+
+  .chat-form {
+    display: grid;
+    gap: 0.75rem;
+
+    textarea {
+      width: 100%;
+      resize: vertical;
+      padding: 0.875rem;
+      border: 0.0625rem solid rgba(148, 163, 184, 0.18);
+      border-radius: 1.125rem;
+      background: rgba(15, 23, 42, 0.95);
+      color: #e2e8f0;
+    }
+  }
+
+  .postcard-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+
+    .postcard-hero {
+      height: 17.5rem;
+      border-radius: 1.5rem;
+      background-image: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80');
+      background-size: cover;
+      background-position: center;
+      box-shadow: inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.05);
+
+      &.loading-state {
+        display: grid;
+        place-items: center;
+        background: rgba(15, 23, 42, 0.6);
+      }
+
+      .loading-spinner {
+        color: #e2e8f0;
+        text-align: center;
+      }
+    }
+
+    .postcard-content {
+      h3 {
+        margin: 0;
+      }
+
+      p {
+        margin: 0.75rem 0 0;
+        white-space: pre-wrap;
+        line-height: 1.75;
+        color: #cbd5e1;
+      }
+    }
+  }
 }
-.left-panel {
-  flex: 0 0 400px;
-  min-width: 300px;
-}
-.postcard-panel {
-  flex: 1;
-}
-.chat-panel {
-  display: grid;
-  gap: 14px;
-  max-height: 520px;
-  overflow-y: auto;
-  margin-bottom: 20px;
-}
-.chat-bubble {
-  padding: 16px;
-  border-radius: 22px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  background: rgba(15, 23, 42, 0.9);
-}
-.chat-bubble.user {
-  background: rgba(59, 130, 246, 0.14);
-}
-.chat-bubble.assistant {
-  background: rgba(75, 85, 99, 0.9);
-}
-.chat-bubble strong {
-  display: block;
-  margin-bottom: 8px;
-}
-.chat-form {
-  display: grid;
-  gap: 12px;
-}
-.chat-form textarea {
-  width: 100%;
-  resize: vertical;
-  border-radius: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(15, 23, 42, 0.95);
-  color: #e2e8f0;
-  padding: 14px;
-}
-.postcard-card {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-.postcard-hero {
-  height: 280px;
-  border-radius: 24px;
-  background-image: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80');
-  background-size: cover;
-  background-position: center;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-}
-.postcard-hero.loading-state {
-  display: grid;
-  place-items: center;
-  background: rgba(15, 23, 42, 0.6);
-}
-.loading-spinner {
-  color: #e2e8f0;
-  font-size: 1rem;
-  text-align: center;
-}
-.postcard-content h3 {
-  margin: 0;
-}
-.postcard-content p {
-  margin: 12px 0 0;
-  white-space: pre-wrap;
-  line-height: 1.75;
-  color: #cbd5e1;
-}
+
 @media (max-width: 980px) {
   .postcard-shell {
     flex-direction: column;
-  }
-  .left-panel {
-    width: 100%;
+
+    .left-panel {
+      width: 100%;
+    }
   }
 }
 </style>

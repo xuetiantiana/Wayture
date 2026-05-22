@@ -240,12 +240,12 @@ onMounted(async () => {
 </script>
 
 <style scoped lang="scss">
-.p-24 { padding: 24px; }
-.mt-24 { margin-top: 24px; }
-.mb-16 { margin-bottom: 16px; }
-.mb-14 { margin-bottom: 14px; }
-.p-20 { padding: 20px; }
-.p-18 { padding: 18px; }
+.p-24 { padding: 1.5rem; }
+.mt-24 { margin-top: 1.5rem; }
+.mb-16 { margin-bottom: 1rem; }
+.mb-14 { margin-bottom: 0.875rem; }
+.p-20 { padding: 1.25rem; }
+.p-18 { padding: 1.125rem; }
 .align-center { align-items: center; }
 .justify-between { justify-content: space-between; }
 .wrap { flex-wrap: wrap; }
@@ -263,7 +263,7 @@ onMounted(async () => {
 
 .main-tabbar {
   position: absolute;
-  top: 22px;
+  top: 1.375rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 15;
@@ -273,19 +273,18 @@ onMounted(async () => {
   .tab-group {
     display: inline-flex;
     gap: 0;
-    border-radius: 8px;
+    border-radius: 0.5rem;
     background: rgba(245, 245, 245, 1);
     overflow: hidden;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(0.25rem);
+    -webkit-backdrop-filter: blur(0.25rem);
 
     .tab-button {
-      min-width: 58px;
-      height: 42px;
+      min-width: 3.625rem;
+      height: 2.625rem;
       border: none;
       background: transparent;
       color: rgba(23, 68, 58, 1);
-      font-size: 18px;
       font-weight: 700;
       transition: background-color 0.2s ease, color 0.2s ease;
 
@@ -305,42 +304,41 @@ onMounted(async () => {
 
   .map-container {
     position: relative;
-    min-height: 520px;
+    min-height: 32.5rem;
     height: 100%;
-    border-radius: 26px;
+    border-radius: 1.625rem;
 
     .field-legend {
       position: absolute;
       top: 5rem;
-      left: 16px;
+      left: 1rem;
       z-index: 12;
       display: grid;
-      gap: 6px;
-      min-width: 132px;
-      padding: 10px 12px;
-      border: 1px solid rgba(255, 255, 255, 0.45);
-      border-radius: 8px;
+      gap: 0.375rem;
+      min-width: 8.25rem;
+      padding: 0.625rem 0.75rem;
+      border: 0.0625rem solid rgba(255, 255, 255, 0.45);
+      border-radius: 0.5rem;
       background: rgba(15, 23, 42, 0.36);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(0.25rem);
+      -webkit-backdrop-filter: blur(0.25rem);
 
       .field-legend-item {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 0.5rem;
         color: #f8fafc;
-        font-size: 13px;
         line-height: 1.2;
-        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+        text-shadow: 0 0.0625rem 0.1875rem rgba(0, 0, 0, 0.45);
         white-space: nowrap;
       }
 
       .field-legend-dot {
-        width: 12px;
-        height: 12px;
-        border: 2px solid rgba(255, 255, 255, 0.9);
-        border-radius: 999px;
-        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.28);
+        width: 0.75rem;
+        height: 0.75rem;
+        border: 0.125rem solid rgba(255, 255, 255, 0.9);
+        border-radius: 999rem;
+        box-shadow: 0 0.125rem 0.375rem rgba(15, 23, 42, 0.28);
         flex-shrink: 0;
       }
 
@@ -364,7 +362,7 @@ onMounted(async () => {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 4px;
+        gap: 0.25rem;
         width: max-content;
         height: auto;
         transform: translate(-50%, -50%);
@@ -382,23 +380,23 @@ onMounted(async () => {
         &.active {
           .map-point {
             border-color: #fff;
-            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.26), 0 10px 22px rgba(15, 23, 42, 0.28);
+            box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.26), 0 0.625rem 1.375rem rgba(15, 23, 42, 0.28);
           }
         }
       }
 
       .map-point {
-        width: 16px;
-        height: 16px;
+        width: 1rem;
+        height: 1rem;
         display: grid;
         place-items: center;
-        border: 2px solid rgba(255, 255, 255, 0.86);
-        border-radius: 999px;
+        border: 0.125rem solid rgba(255, 255, 255, 0.86);
+        border-radius: 999rem;
         color: #fff;
-        font-size: 7px;
+        font-size: 0.4375rem;
         font-weight: 700;
         line-height: 1;
-        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.26);
+        box-shadow: 0 0.375rem 0.875rem rgba(15, 23, 42, 0.26);
         transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background-color 0.16s ease;
 
         .map-point-order {
@@ -413,21 +411,19 @@ onMounted(async () => {
           color: #fff7ed;
           border-color: rgba(255, 255, 255, 0.96);
           transform: scale(2);
-          // box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18), 0 10px 22px rgba(127, 29, 29, 0.26);
         }
       }
 
       .map-point-label {
-        padding: 4px;
-        border-radius: 8px;
+        padding: 0.25rem;
+        border-radius: 0.5rem;
         background: rgba(13, 13, 13, 0.4);
         color: #fff;
-        font-size: 14px;
         font-weight: 400;
         line-height: 1.2;
         white-space: nowrap;
         position: absolute;
-        bottom: calc(100% + 6px);
+        bottom: calc(100% + 0.375rem);
 
       }
     }
@@ -438,14 +434,14 @@ onMounted(async () => {
       transform: translateY(-50%);
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 0.75rem;
       z-index: 12;
-      right: 10px;
+      right: 0.625rem;
 
       li {
         list-style: none;
         padding: 1em;
-        border-radius: 16px;
+        border-radius: 1rem;
         background: rgba(40, 40, 40, 1);
         color: #f8fafc;
         color: #fff;
@@ -457,7 +453,7 @@ onMounted(async () => {
 
 .list-panel {
   display: grid;
-  gap: 16px;
+  gap: 1rem;
 
   &.mt-24 {
     margin-top: 0;
@@ -467,21 +463,21 @@ onMounted(async () => {
 .group-tag {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 999px;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 999rem;
   color: #fff;
   font-size: 0.85rem;
   font-weight: 700;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 0.5rem 1.25rem rgba(15, 23, 42, 0.18);
 }
 
 .point-id-badge {
-  width: 32px;
-  height: 32px;
+  width: 2rem;
+  height: 2rem;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 0.5rem;
   color: #fff;
   font-size: 0.9rem;
   font-weight: 700;
@@ -490,29 +486,28 @@ onMounted(async () => {
 
 .selected-popup {
   position: fixed;
-  right: 10px;
-  bottom: 10px;
-  width: min(360px, calc(100% - 32px));
-  max-width: 360px;
+  right: 0.625rem;
+  bottom: 0.625rem;
+  width: min(22.5rem, calc(100% - 2rem));
+  max-width: 22.5rem;
   background: rgba(0,0,0,0.42);
-  border: 1px solid rgba(96, 165, 250, 0.35);
-  border-radius: 24px;
-  backdrop-filter: blur(20px);
+  border: 0.0625rem solid rgba(96, 165, 250, 0.35);
+  border-radius: 1.5rem;
+  backdrop-filter: blur(1.25rem);
   z-index: 40;
   overflow: hidden;
 
   &.collapsed {
-    width: min(220px, calc(100% - 32px));
+    width: min(13.75rem, calc(100% - 2rem));
   }
 
   .selected-popup-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
-    padding: 8px 18px;
+    gap: 0.75rem;
+    padding: 0.5rem 1.125rem;
     .toggle-icon{
-      font-size: 12px;
       cursor: pointer;
       background-color: rgba(15, 23, 42, 0.2);
       padding: .5em 1em;
@@ -529,45 +524,43 @@ onMounted(async () => {
     }
 
     .popup-subtitle {
-      margin: 4px 0 0;
+      margin: 0.25rem 0 0;
       font-size: 0.82rem;
       color: #94a3b8;
     }
   }
 
   .popup-empty {
-    padding: 8px 16px;
+    padding: 0.5rem 1rem;
     color: #94a3b8;
-    font-size: 14px;
   }
 
   .selected-list {
     list-style: none;
     margin: 0;
-    padding: 9px 18px;
+    padding: 0.5625rem 1.125rem;
     display: grid;
-    gap: 10px;
-    max-height: 220px;
+    gap: 0.625rem;
+    max-height: 13.75rem;
     overflow-y: auto;
 
     .selected-item {
       display: grid;
-      grid-template-columns: 24px 1fr auto;
+      grid-template-columns: 1.5rem 1fr auto;
       align-items: center;
-      gap: 10px;
-      border-radius: 18px;
-      font-size: 14px;
+      gap: 0.625rem;
+      border-radius: 1.125rem;
       
       .item-index {
-        width: 22px;
-        height: 22px;
+        width: 1.375rem;
+        height: 1.375rem;
         display: grid;
         place-items: center;
         border-radius: 100%;
         background: rgba(230, 85, 44, 1);
         color: #dbeafe;
         font-weight: 700;
-        border: 2px solid rgba(255, 255, 255, 1);
+        border: 0.125rem solid rgba(255, 255, 255, 1);
         box-sizing: border-box;
         font-size: .8em;
       }
@@ -588,7 +581,7 @@ onMounted(async () => {
   .popup-footer {
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
+    gap: 0.75rem;
     margin-top: auto;
   }
 
@@ -599,8 +592,8 @@ onMounted(async () => {
 
 .full-width {
   width: 100%;
-  border-radius: 0 0 24px 24px;
-  margin-top: 12px;
+  border-radius: 0 0 1.5rem 1.5rem;
+  margin-top: 0.75rem;
 }
 
 .info-card {
@@ -610,14 +603,14 @@ onMounted(async () => {
   }
 
   p {
-    margin: 8px 0 0;
+    margin: 0.5rem 0 0;
     color: #cbd5e1;
   }
 }
 
 .grid-list {
   display: grid;
-  gap: 16px;
+  gap: 1rem;
 }
 
 .text-muted {
@@ -630,28 +623,28 @@ onMounted(async () => {
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 14px;
+  gap: 0.875rem;
 
   .tour-item {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 16px;
-    padding: 16px;
-    border: 1px solid rgba(148, 163, 184, 0.12);
-    border-radius: 20px;
+    gap: 1rem;
+    padding: 1rem;
+    border: 0.0625rem solid rgba(148, 163, 184, 0.12);
+    border-radius: 1.25rem;
 
     .tour-item-left {
       display: flex;
-      gap: 14px;
+      gap: 0.875rem;
       align-items: flex-start;
       min-width: 0;
     }
 
     .tour-thumbnail {
-      width: 84px;
-      height: 84px;
-      border-radius: 18px;
+      width: 5.25rem;
+      height: 5.25rem;
+      border-radius: 1.125rem;
       background-color: rgba(148, 163, 184, 0.12);
       background-position: center;
       background-size: cover;
@@ -659,18 +652,18 @@ onMounted(async () => {
     }
 
     .tour-description {
-      margin: 8px 0 0;
+      margin: 0.5rem 0 0;
       color: #cbd5e1;
       line-height: 1.5;
-      max-width: 420px;
+      max-width: 26.25rem;
     }
   }
 }
 
 .empty-state {
-  padding: 24px;
-  border-radius: 20px;
-  border: 1px dashed rgba(148, 163, 184, 0.22);
+  padding: 1.5rem;
+  border-radius: 1.25rem;
+  border: 0.0625rem dashed rgba(148, 163, 184, 0.22);
   text-align: center;
   color: #9ca3af;
 }
