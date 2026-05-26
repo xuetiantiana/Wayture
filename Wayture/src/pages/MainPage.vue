@@ -1,5 +1,5 @@
 <template>
-  <section class="flex-col page-shell" aria-label="主页面">
+  <section class="flex-col" aria-label="主页面">
     <div class="panel-card" style="position: relative;">
       <div class="main-tabbar">
         <div class="tab-group">
@@ -149,18 +149,18 @@ const detailModalStyle = ref<Record<string, string>>({});
 const tourCases = [
   {
     name: 'parent-kid-day',
-    label: '🧸 亲子时光',
-    ids: [21, 22, 25, 35, 29, 24,26,1,2,3,4,5,7,8],
-  },
-  {
-    name: 'thrill-seeker',
-    label: '🎢 惊险挑战',
-    ids: [11, 12, 17, 13, 16, 32],
+    label: '🧸 萌娃陪伴线',
+    ids: [21,1,2,3,4,25,7,8,20,35,34,33,30,31,29,24,26],
   },
   {
     name: 'relax-wander',
-    label: '🌿 悠闲漫步',
-    ids: [32, 25, 35, 15,9],
+    label: '🌿 悠游漫享线',
+    ids: [35,21,22,25,19,9,15],
+  },
+  {
+    name: 'thrill-seeker',
+    label: '🎢 心跳挑战线',
+    ids: [11, 12, 17, 13, 16, 32],
   },
 ];
 
@@ -356,7 +356,6 @@ onMounted(async () => {
 
   .map-container {
     position: relative;
-    min-height: 32.5rem;
     height: 100%;
     border-radius: 1.625rem;
 

@@ -78,11 +78,10 @@ const nickname = ref('');
 const selectedStyle = ref('');
 
 const tourStyles = [
-  { value: '家庭冒险', name: '家庭冒险', icon: '👨‍👩‍👧', desc: '' },
-  { value: '情侣出逃', name: '情侣出逃', icon: '💕', desc: '' },
-  { value: '亲子时光', name: '亲子时光', icon: '🧸', desc: '' },
-  { value: '一个人的旅程', name: '一个人的旅程', icon: '🌿', desc: '' },
-  { value: '好友旅行', name: ' 好友旅行', icon: '🎉', desc: '' }
+  { value: '亲子欢乐时光', name: '亲子欢乐时光', icon: '👨‍👩‍👧', desc: '' },
+  { value: '双人甜蜜漫游', name: '双人甜蜜漫游', icon: '💕', desc: '' },
+  { value: '独享自在时光', name: '独享自在时光', icon: '🌿', desc: '' },
+  { value: '朋友欢乐同行', name: ' 朋友欢乐同行', icon: '🎉', desc: '' }
 ];
 
 const canProceed = computed(() => {
@@ -246,7 +245,7 @@ function closeOnOverlay() {
           gap: 6px;
 
           .style-btn {
-            grid-column: span 2;
+            grid-column: span 3;
             display: inline-flex;
             flex-direction: row;
             align-items: center;

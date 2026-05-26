@@ -13,7 +13,7 @@
               <p class="profile-username">{{ userPrincipalName }}</p>
             </div>
             <button class="dropdown-item" type="button" @click="openSettings">设置</button>
-            <button class="dropdown-item danger" type="button" @click="logout">退出</button>
+            <button class="dropdown-item" type="button" @click="logout">退出</button>
           </div>
         </div>
       </template>
@@ -81,8 +81,8 @@ function openSettings() {
     position: absolute;
     left: 2rem;
     top: 1.2em;
-    font-size: 1.2rem;
-    font-weight: 700;
+    font-size: 1.125rem;
+    font-weight: 600;
     cursor: pointer;
     z-index: 9;
 

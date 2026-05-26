@@ -65,7 +65,7 @@
       >
         <div v-if="isUploading" class="spinner small"></div>
         <div v-else class="upload-icon">+</div>
-        <p>{{ isUploading ? "Uploading..." : "Upload/Drag your photos, Start Creating Your Memories" }}</p>
+        <p>{{ isUploading ? "上传中..." : "上传或拖拽您的照片，开启您的专属回忆" }}</p>
       </div>
 
       <div v-if="isLoading" class="loading-section">
