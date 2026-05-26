@@ -226,7 +226,7 @@ function clearSelectedPoints() {
 }
 
 function goTourDetails() {
-  router.push('/tour');
+  router.push('/tour-list');
 }
 
 async function generateTour() {

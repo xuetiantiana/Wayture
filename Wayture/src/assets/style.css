@@ -18,7 +18,14 @@ body {
 
 html{
   font-size: 16px;
-  scrollbar-color: rgba(31, 31, 31, 0.36) rgba(31, 31, 31, 0.08);
+  scrollbar-color: rgba(31, 31, 31, 0.36) transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+* {
+  scrollbar-color: rgba(31, 31, 31, 0.36) transparent;
+  scrollbar-gutter: stable;
   scrollbar-width: thin;
 }
 
@@ -28,7 +35,7 @@ html{
 }
 
 *::-webkit-scrollbar-track {
-  background: rgba(31, 31, 31, 0.08);
+  background: transparent;
   border-radius: 999px;
 }
 
@@ -135,7 +142,7 @@ button {
     }
   }
 
-@media (max-width: 960px) {
+@media (max-width: 640px) {
   .flex-row {
     flex-direction: column;
   }

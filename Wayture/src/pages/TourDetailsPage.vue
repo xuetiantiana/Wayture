@@ -1,96 +1,42 @@
 <template>
-  <section class="flex-row tour-details-shell">
-    <aside class="panel-card p-24 side-panel">
-      <div class="details-topbar">
-        <div class="details-title-row">
-          <button class="details-back-button" type="button" aria-label="返回" @click="editMap">
-            <el-icon><ArrowLeftBold /></el-icon>
-          </button>
-          <h2 class="section-title">地图列表</h2>
-          <button class="tour-map-button" type="button" aria-label="游览地图" @click="isTourListOpen = true">
-            <img :src="listIcon" alt="" />
-          </button>
-        </div>
-        <p class="subtitle">
-          {{ activeRouteSummary || "AI 正在为你规划最佳游览路线。" }}
-        </p>
-      </div>
-
-      <!-- 加载状态 -->
-      <div v-if="displayError" class="route-error">
-        <p>{{ displayError }}</p>
+  <section
+    class="flex-row tour-details-shell"
+    :class="{ 'tour-list-shell': isTourListPage }"
+  >
+    <aside v-if="isTourListPage" class="tour-record-sidebar">
+      <div class="sidebar-header">
         <button
+          class="back-button"
           type="button"
-          class="retry-button"
-          @click="generatePostcard()"
+          aria-label="返回"
+          @click="editMap"
         >
-          重新生成明信片
+          <el-icon><ArrowLeftBold /></el-icon>
         </button>
-      </div>
-
-      <!-- 路线列表 -->
-      <div v-else class="progress-list">
-        <div
-          v-for="(point, index) in orderedPoints"
-          :key="point.id"
-          class="progress-item"
-          :class="{ active: activeHighlightId === point.id }"
-          @mouseenter="setHoverPoint(point.id)"
-          @mouseleave="clearHoverPoint"
-        >
-          <div class="step-number">
-            <img
-              v-if="point.images?.[0]"
-              :src="point.images[0]"
-              :alt="point.name"
-            />
-            <span v-else>{{ index + 1 }}</span>
-          </div>
-          <div class="step-content">
-            <span class="label">景点</span>
-            <p>
-              <strong
-                >{{ index + 1 }}.{{ point.name }}-{{ point.field }}</strong
-              >
-            </p>
-            <div class="content-detail">
-              <p>建议停留: {{ point.cost }}</p>
-              <p class="step-description">{{ point.description }}</p>
-              <p v-if="tipsMap.get(point.id)" class="step-tips">
-                tips: {{ tipsMap.get(point.id) }}
-              </p>
-            </div>
-          </div>
+        <div class="album-label">
+          <span>路线地图列表</span>
         </div>
       </div>
-
-      <div
-        v-if="isTourListOpen"
-        class="tour-list-layer"
-        @click.self="isTourListOpen = false"
-      >
-        <aside class="tour-list-drawer" role="dialog" aria-modal="true" aria-label="游览列表">
-          <header class="tour-list-header">
-            <strong>{{ activeTourTitle }}</strong>
-            <button type="button" aria-label="关闭游览列表" @click="isTourListOpen = false">×</button>
-          </header>
-          <div class="tour-list-body">
-            <button
-              v-for="record in allTourList"
-              :key="record.id"
-              class="tour-list-item"
-              :class="{ active: activeTourRecordId === record.id }"
-              type="button"
-              @click="selectTourRecordById(record.id)"
-            >
-              {{ record.title }}
-            </button>
-          </div>
-        </aside>
+      <div class="tour-record-list">
+        <div
+          v-for="record in allTourList"
+          :key="record.id"
+          class="tour-record-item"
+          :class="{ active: activeTourRecordId === record.id }"
+          @click="selectTourRecordById(record.id, false)"
+        >
+          <p>
+            <strong>{{ record.title }}</strong>
+          </p>
+          <p>
+            <span>{{ formatRecordDate(record.createdAt) }}</span>
+          </p>
+        </div>
       </div>
     </aside>
-    <section class="map-panel panel-card p-24">
-      <div class="map-toolbar">
+
+    <div class="tour-content-panels">
+      <div v-if="isTourListPage" class="tour-content-toolbar">
         <strong>{{ activeTourTitle }}</strong>
         <div class="map-actions">
           <template v-if="postcardImageUrl && !isPostcardPending">
@@ -115,9 +61,7 @@
             </el-button>
           </template>
           <template v-else>
-            <span
-              class="map-action map-action-edit"
-              @click="editMap"
+            <span class="map-action map-action-edit" @click="editMap"
               >✎ 编辑地图</span
             >
             <span
@@ -129,90 +73,250 @@
           </template>
         </div>
       </div>
-      <div class="map-scroll-area">
-        <div
-          ref="downloadContainer"
-          :style="{
-            width: '600px',
-            margin: '0 auto',
-          }"
-          class="dowmload-container"
-        >
-          <div class="map-frame tour-map">
-            <img
-              class="map-image"
-              :src="tour.mapImageUrl"
-              alt="园区地图"
-            />
-            <div
-              v-for="point in points"
-              :key="point.id"
-              class="map-point"
-              :class="{
-                selected: routePlanned && isRoutePoint(point.id),
-                active: activeHighlightId === point.id,
-              }"
-              :style="getMapPointStyle(point)"
-              @mouseenter="setHoverPoint(point.id)"
-              @mouseleave="clearHoverPoint"
+      <aside class="panel-card p-24 side-panel">
+        <div class="details-topbar">
+          <div class="details-title-row">
+            <button
+              v-if="!isTourListPage"
+              class="details-back-button"
+              type="button"
+              aria-label="返回"
+              @click="editMap"
             >
-              <span v-if="routePlanned && isRoutePoint(point.id)" class="map-point-order">
-                {{ getRouteOrder(point.id) }}
-              </span>
-              <span v-if="routePlanned && isRoutePoint(point.id)" class="map-point-name">
-                {{ point.name }}
-              </span>
-            </div>
+              <el-icon><ArrowLeftBold /></el-icon>
+            </button>
+            <h2 class="section-title">地图路线</h2>
+            <button
+              v-if="!isTourListPage"
+              class="tour-map-button"
+              type="button"
+              aria-label="游览地图"
+              @click="isTourListOpen = !isTourListOpen"
+            >
+              <img :src="listIcon" alt="" />
+            </button>
           </div>
-          <div
-            v-if="postcardImageUrl || isPostcardPending"
-            class="postcard-preview"
-          >
-            <div v-if="isPostcardPending" class="postcard-loading">
-              <div class="loading-icons">
-                <img :src="icon1" alt="" />
-                <img :src="icon2" alt="" />
-                <img :src="icon3" alt="" />
-              </div>
-              <p>地图正在生成中，等待时间可能稍长，<br/>你可以稍后查看...</p>
-            </div>
-            <img
-              v-else
-              :key="`${activeTourRecordId}-${postcardImageUrl}`"
-              :src="postcardImageUrl"
-              alt="明信片"
-              width="100%"
-            />
-          </div>
-          <el-button
-            v-if="postcardImageUrl && !isPostcardPending"
-            class="download-container-button"
-            :loading="imageDownloading"
-            :disabled="imageDownloading"
-            type="primary"
-            data-html2canvas-ignore="true"
-            @click="downloadImage"
-          >
-            <template #icon>
-              <Download />
-            </template>
-            <span>Download</span>
-          </el-button>
-          
-        </div>
-        <p style="margin-top: 1rem; font-size: 0.875rem; color: #555;text-align: center;padding:0 2rem 2rem;">
-            可下载保存到手机随时查看；如果之后有打印计划，推荐使用 A3 尺寸，画面整体观感会更舒适一些。
+          <p class="subtitle">
+            {{ activeRouteSummary || "AI 正在为你规划最佳游览路线。" }}
           </p>
-      </div>
-    </section>
+        </div>
 
+        <!-- 加载状态 -->
+        <div v-if="displayError" class="route-error">
+          <p>{{ displayError }}</p>
+          <button
+            type="button"
+            class="retry-button"
+            @click="generatePostcard()"
+          >
+            重新生成明信片
+          </button>
+        </div>
+
+        <!-- 路线列表 -->
+        <div v-else class="progress-list">
+          <div
+            v-for="(point, index) in orderedPoints"
+            :key="point.id"
+            class="progress-item"
+            :class="{ active: activeHighlightId === point.id }"
+            @mouseenter="setHoverPoint(point.id)"
+            @mouseleave="clearHoverPoint"
+          >
+            <div class="step-number">
+              <img
+                v-if="point.images?.[0]"
+                :src="point.images[0]"
+                :alt="point.name"
+              />
+              <span v-else>{{ index + 1 }}</span>
+            </div>
+            <div class="step-content">
+              <span class="label">景点</span>
+              <p>
+                <strong
+                  >{{ index + 1 }}.{{ point.name }}-{{ point.field }}</strong
+                >
+              </p>
+              <div class="content-detail">
+                <p>建议停留: {{ point.cost }}</p>
+                <p class="step-description">{{ point.description }}</p>
+                <p v-if="tipsMap.get(point.id)" class="step-tips">
+                  tips: {{ tipsMap.get(point.id) }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-if="isTourListOpen"
+          class="tour-list-layer"
+          @click.self="isTourListOpen = false"
+        >
+          <aside
+            class="tour-list-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="游览列表"
+          >
+            <header class="tour-list-header">
+              <strong>{{ activeTourTitle }}</strong>
+              <button
+                type="button"
+                aria-label="关闭游览列表"
+                @click="isTourListOpen = false"
+              >
+                ×
+              </button>
+            </header>
+            <div class="tour-list-body">
+              <button
+                v-for="record in allTourList"
+                :key="record.id"
+                class="tour-list-item"
+                :class="{ active: activeTourRecordId === record.id }"
+                type="button"
+                @click="selectTourRecordById(record.id)"
+              >
+                {{ record.title }}
+              </button>
+            </div>
+          </aside>
+        </div>
+      </aside>
+      <section class="map-panel panel-card p-24">
+        <div class="map-toolbar">
+          <strong>{{ activeTourTitle }}</strong>
+          <div class="map-actions">
+            <template v-if="postcardImageUrl && !isPostcardPending">
+              <el-button class="create-memories-button" @click="createMemories">
+                创建回忆
+              </el-button>
+              <el-button
+                :loading="imageDownloading"
+                :disabled="imageDownloading"
+                type="primary"
+                @click="downloadImage"
+              >
+                <template #icon>
+                  <Download />
+                </template>
+                <span>下载图片</span>
+              </el-button>
+            </template>
+            <template v-else-if="isPostcardPending">
+              <el-button type="primary" :loading="true" disabled>
+                明信片生成中
+              </el-button>
+            </template>
+            <template v-else>
+              <span class="map-action map-action-edit" @click="editMap"
+                >✎ 编辑地图</span
+              >
+              <span
+                class="map-action map-action-confirm"
+                :class="{ disabled: !canGeneratePostcard }"
+                @click="generatePostcard()"
+                >☼ 生成明信片</span
+              >
+            </template>
+          </div>
+        </div>
+        <div class="map-scroll-area">
+          <div
+            ref="downloadContainer"
+            :style="{
+              width: '600px',
+              margin: '0 auto',
+            }"
+            class="dowmload-container"
+          >
+            <div class="map-frame tour-map">
+              <img class="map-image" :src="tour.mapImageUrl" alt="园区地图" />
+              <div
+                v-for="point in points"
+                :key="point.id"
+                class="map-point"
+                :class="{
+                  selected: routePlanned && isRoutePoint(point.id),
+                  active: activeHighlightId === point.id,
+                }"
+                :style="getMapPointStyle(point)"
+                @mouseenter="setHoverPoint(point.id)"
+                @mouseleave="clearHoverPoint"
+              >
+                <span
+                  v-if="routePlanned && isRoutePoint(point.id)"
+                  class="map-point-order"
+                >
+                  {{ getRouteOrder(point.id) }}
+                </span>
+                <span
+                  v-if="routePlanned && isRoutePoint(point.id)"
+                  class="map-point-name"
+                >
+                  {{ point.name }}
+                </span>
+              </div>
+            </div>
+            <div
+              v-if="postcardImageUrl || isPostcardPending"
+              class="postcard-preview"
+            >
+              <div v-if="isPostcardPending" class="postcard-loading">
+                <div class="loading-icons">
+                  <img :src="icon1" alt="" />
+                  <img :src="icon2" alt="" />
+                  <img :src="icon3" alt="" />
+                </div>
+                <p>地图正在生成中，等待时间可能稍长，<br />你可以稍后查看...</p>
+              </div>
+              <img
+                v-else
+                :key="`${activeTourRecordId}-${postcardImageUrl}`"
+                :src="postcardImageUrl"
+                alt="明信片"
+                width="100%"
+              />
+            </div>
+            <el-button
+              v-if="postcardImageUrl && !isPostcardPending"
+              class="download-container-button"
+              :loading="imageDownloading"
+              :disabled="imageDownloading"
+              type="primary"
+              data-html2canvas-ignore="true"
+              @click="downloadImage"
+            >
+              <template #icon>
+                <Download />
+              </template>
+              <span>Download</span>
+            </el-button>
+          </div>
+          <p
+            style="
+              margin-top: 1rem;
+              font-size: 0.875rem;
+              color: #555;
+              text-align: center;
+              padding: 0 2rem 2rem;
+            "
+          >
+            可下载保存到手机随时查看；如果之后有打印计划，推荐使用 A3
+            尺寸，画面整体观感会更舒适一些。
+          </p>
+        </div>
+      </section>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import html2canvas from "html2canvas";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { ArrowLeftBold, Download } from "@element-plus/icons-vue";
 import { useTourStore } from "../composables/useTourStore";
 import icon1 from "../assets/images/icon1.png";
@@ -222,6 +326,7 @@ import listIcon from "../assets/images/list.png";
 import { getFieldColor } from "../data/fieldConfig";
 
 const router = useRouter();
+const route = useRoute();
 const tour = useTourStore();
 const points = tour.points;
 const allTourList = tour.allTourList;
@@ -236,8 +341,10 @@ const postcardPollInterval = 30000;
 let postcardPollTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 当前页面只展示 allTourList 中正在激活的路线记录。
-const activeTourRecord = computed(() =>
-  allTourList.value.find((item) => item.id === activeTourRecordId.value) ?? null,
+const activeTourRecord = computed(
+  () =>
+    allTourList.value.find((item) => item.id === activeTourRecordId.value) ??
+    null,
 );
 
 // 明信片图片地址持久化在当前路线记录中，页面展示时统一做 API base 补全。
@@ -247,10 +354,17 @@ const postcardImageUrl = computed(() =>
     : "",
 );
 
-const isPostcardPending = computed(() => activeTourRecord.value?.postcardStatus === "pending");
-const displayError = computed(() => routeError.value || activeTourRecord.value?.postcardError || "");
-const routePlanned = computed(() => (activeTourRecord.value?.routePlan.length ?? 0) > 0);
+const isPostcardPending = computed(
+  () => activeTourRecord.value?.postcardStatus === "pending",
+);
+const displayError = computed(
+  () => routeError.value || activeTourRecord.value?.postcardError || "",
+);
+const routePlanned = computed(
+  () => (activeTourRecord.value?.routePlan.length ?? 0) > 0,
+);
 const activeHighlightId = computed(() => hoverPointId.value);
+const isTourListPage = computed(() => route.path === "/tour-list");
 
 // 生成明信片依赖当前路线记录，不再依赖临时页面状态。
 const canGeneratePostcard = computed(
@@ -262,24 +376,27 @@ const canGeneratePostcard = computed(
 );
 
 const userDisplayName = computed(
-  () => tour.userSettings.value.nickname || tour.currentUsername.value || "Wayture",
+  () =>
+    tour.userSettings.value.nickname || tour.currentUsername.value || "Wayture",
 );
 
 // 顶部标题跟随当前路线记录切换。
 const activeTourTitle = computed(() => {
-  const record = allTourList.value.find((item) => item.id === activeTourRecordId.value);
+  const record = allTourList.value.find(
+    (item) => item.id === activeTourRecordId.value,
+  );
   return record?.title || `${userDisplayName.value}幸福一家尺木神奇世界一日游`;
 });
 
-const activeRouteSummary = computed(() => activeTourRecord.value?.routeSummary || "");
+const activeRouteSummary = computed(
+  () => activeTourRecord.value?.routeSummary || "",
+);
 
 // 根据当前路线记录中的 selectedIds 恢复路线顺序。
 const orderedPoints = computed(() => {
   return (activeTourRecord.value?.selectedIds ?? [])
     .map((id) => points.value.find((item) => item.id === id))
-    .filter((item): item is (typeof points.value)[number] =>
-      Boolean(item),
-    );
+    .filter((item): item is (typeof points.value)[number] => Boolean(item));
 });
 
 // 规划接口返回的 tips 仍然从当前路线记录恢复到 routePlan 中读取。
@@ -322,6 +439,17 @@ function clearHoverPoint() {
   hoverPointId.value = null;
 }
 
+function formatRecordDate(iso: string): string {
+  const date = new Date(iso);
+  return date.toLocaleDateString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function selectTourRecordById(recordId: string, closeDrawer = true) {
   const selected = tour.setActiveTourRecord(recordId);
   if (!selected) return;
@@ -337,8 +465,6 @@ function selectTourRecordById(recordId: string, closeDrawer = true) {
 }
 
 function editMap() {
-  
-
   router.push("/main");
 }
 
@@ -369,6 +495,10 @@ function extractPostcardImageUrl(data: any): string {
   );
 }
 
+function extractPostcardTitle(data: any): string {
+  return data?.title || data?.result?.title || "";
+}
+
 // 页面销毁或切换路线时停止旧任务轮询，避免多个定时器同时更新记录。
 function stopPostcardPolling() {
   if (postcardPollTimer) {
@@ -392,13 +522,17 @@ async function pollPostcardTask(taskId: string) {
 
   try {
     const username = encodeURIComponent(tour.currentUsername.value);
-    const resp = await fetch(`${tour.apiBase}/api/tasks/${username}/${encodeURIComponent(taskId)}`);
+    const resp = await fetch(
+      `${tour.apiBase}/api/tasks/${username}/${encodeURIComponent(taskId)}`,
+    );
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
 
     if (data.status === "completed") {
       const imageUrl = extractPostcardImageUrl(data);
+      const title = extractPostcardTitle(data);
       tour.updateTourRecord(record.id, {
+        ...(title ? { title } : {}),
         postcardStatus: "completed",
         postcardImageUrl: imageUrl,
         postcardData: data.result ?? data,
@@ -459,9 +593,11 @@ async function generatePostcard(additionPrompt = promptParts.value.join("\n")) {
     const data = await resp.json();
     const taskId = data.image_task_id || data.task_id;
     const imageUrl = extractPostcardImageUrl(data);
+    const title = extractPostcardTitle(data);
 
     if (imageUrl) {
       tour.updateTourRecord(record.id, {
+        ...(title ? { title } : {}),
         postcardStatus: "completed",
         postcardTaskId: taskId || "",
         postcardImageUrl: imageUrl,
@@ -474,6 +610,7 @@ async function generatePostcard(additionPrompt = promptParts.value.join("\n")) {
     if (!taskId) throw new Error("未返回明信片任务 ID");
 
     tour.updateTourRecord(record.id, {
+      ...(title ? { title } : {}),
       postcardStatus: "pending",
       postcardTaskId: taskId,
       postcardData: data,
@@ -541,7 +678,6 @@ function initPostcardPrompt() {
 
 onMounted(async () => {
   initPostcardPrompt();
-  
 
   if (points.value.length === 0) {
     await tour.loadTourPoints();
@@ -568,32 +704,216 @@ onBeforeUnmount(() => {
 <style scoped lang="scss">
 .tour-details-shell {
   position: relative;
+  z-index: 555;
   gap: 0;
   box-sizing: border-box;
   height: 100vh;
-  padding: 0em;
+  padding: 0;
   background: #fff;
   color: #000;
   line-height: 1.6;
-  position: relative;
-  z-index: 555;
+
+  .tour-content-panels {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    background: #f5f5f5;
+  }
+
+  .tour-content-toolbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    box-sizing: border-box;
+    min-height: 4rem;
+    padding: 1rem 1.125rem;
+    background: #fff;
+
+    strong {
+      min-width: 0;
+      overflow: hidden;
+      color: #111827;
+      font-size: 1.125rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .map-actions {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      gap: 0.625rem;
+    }
+
+    .create-memories-button {
+      border: 1px solid;
+      background: #2f2f2f !important;
+      color: #fff !important;
+    }
+
+    .map-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 2.25rem;
+      padding: 0 0.875rem;
+      border-radius: 0.4375rem;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+
+      &.map-action-edit {
+        background: #fff;
+        color: #4b5563;
+        box-shadow: 0 0.125rem 0.5rem rgba(15, 23, 42, 0.18);
+      }
+
+      &.map-action-confirm {
+        background: #e2b82f;
+        color: #fff;
+        box-shadow: 0 0.125rem 0.5rem rgba(161, 111, 0, 0.22);
+      }
+
+      &.disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        pointer-events: none;
+        box-shadow: none;
+      }
+    }
+  }
+
+  .tour-record-sidebar {
+    display: flex;
+    flex: 0 0 18rem;
+    flex-direction: column;
+    box-sizing: border-box;
+    min-width: 0;
+    height: 100%;
+    padding: 1.4rem 0 1.4rem 1.2em;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+      margin-bottom: 2rem;
+    }
+
+    .back-button {
+      display: grid;
+      place-items: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      border: 0;
+      border-radius: 0.5625rem;
+      background: #e9e9e9;
+      color: #1f2933;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .album-label {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      padding: 0 0.125rem;
+      color: #2f2f2f;
+      font-weight: 700;
+      font-size: 1.125rem;
+    }
+
+    .tour-record-list {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      gap: 0.5rem;
+      min-height: 0;
+      overflow-y: auto;
+
+      .tour-record-item {
+        box-sizing: border-box;
+        min-width: 0;
+        width: calc(100% - 1.5rem);
+        padding: 0.625rem 0.75rem;
+        border-radius: 0.5rem;
+        line-height: 1.6;
+        cursor: pointer;
+
+        strong {
+          display: block;
+          overflow: hidden;
+          font-weight: 500;
+          line-height: 1.35;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        span {
+          color: #666;
+          font-size: 0.875rem;
+        }
+
+        &:hover {
+          background: rgba(222, 222, 222, 0.6);
+        }
+
+        &.active {
+          background: rgba(222, 222, 222, 0.6);
+        }
+      }
+    }
+  }
+
+  &.tour-list-shell {
+    .tour-content-panels {
+      position: relative;
+      box-sizing: border-box;
+      padding-top: 4.5rem;
+      background: #f5f5f5;
+    }
+
+    .side-panel {
+      width: 34%;
+      min-width: 22rem;
+      margin: 2rem;
+      border-radius: 1rem;
+    }
+
+    .map-panel {
+      .map-toolbar {
+        display: none;
+      }
+    }
+  }
 
   .side-panel {
     position: relative;
     display: flex;
     flex-direction: column;
-    width:40%;
+    width: 40%;
     min-width: 25rem;
     max-width: 45rem;
     overflow: visible;
     padding: 0 2em;
+    background: #fff;
 
     .details-topbar {
       display: flex;
       flex-direction: column;
       gap: 1rem;
-      padding-top: .7rem;
+      box-sizing: border-box;
       margin-bottom: 1.25rem;
+      padding-top: 1.3rem;
     }
 
     .details-title-row {
@@ -643,7 +963,7 @@ onBeforeUnmount(() => {
       }
     }
 
-    .section-title{
+    .section-title {
       flex: 1 1 auto;
       margin: 0;
       min-width: 0;
@@ -651,6 +971,7 @@ onBeforeUnmount(() => {
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+
     .subtitle {
       margin: 0;
     }
@@ -705,7 +1026,9 @@ onBeforeUnmount(() => {
         cursor: pointer;
         padding: 0.75rem;
         text-align: left;
-        transition: background-color 0.18s ease, box-shadow 0.18s ease;
+        transition:
+          background-color 0.18s ease,
+          box-shadow 0.18s ease;
 
         &.active {
           background: rgba(255, 183, 0, 0.12);
@@ -767,7 +1090,6 @@ onBeforeUnmount(() => {
     }
   }
 
- 
   .tour-list-layer {
     position: absolute;
     top: 0;
@@ -784,12 +1106,12 @@ onBeforeUnmount(() => {
     flex-direction: column;
     width: 100%;
     height: 100%;
+    border-radius: 16px;
     background: #fff;
     box-shadow: 0.25rem 0 1rem rgba(15, 23, 42, 0.08);
-    border-radius: 16px;
 
     .tour-list-header {
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
@@ -797,7 +1119,6 @@ onBeforeUnmount(() => {
       padding: 0 2rem;
       border-bottom: 0.0625rem solid #e2e2e2;
       background: #fff;
-      display: none;
 
       strong {
         min-width: 0;
@@ -828,8 +1149,8 @@ onBeforeUnmount(() => {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      padding: 1.875rem 1.5rem;
       overflow-y: auto;
+      padding: 1.875rem 1.5rem;
     }
 
     .tour-list-item {
@@ -848,7 +1169,7 @@ onBeforeUnmount(() => {
       }
 
       &:hover {
-        background: #ebebeb;
+        background: #e5e5e5;
       }
     }
   }
@@ -858,15 +1179,15 @@ onBeforeUnmount(() => {
     flex: 1;
     flex-direction: column;
     min-width: 0;
-    background-color: #f5f5f5;
     overflow: hidden;
+    background-color: #f5f5f5;
 
     .map-toolbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
-      padding: 0.875rem 1.125rem;
+      padding: 1rem 1.125rem;
       background: #fff;
 
       strong {
@@ -880,7 +1201,7 @@ onBeforeUnmount(() => {
         gap: 0.625rem;
 
         .create-memories-button {
-          border: 1px solid ;
+          border: 1px solid;
           background: #2f2f2f !important;
           color: #fff !important;
         }
@@ -935,8 +1256,8 @@ onBeforeUnmount(() => {
         right: 1rem;
         bottom: 1rem;
         z-index: 5;
-        background: rgba(0, 0, 0, 0.62) !important;
         height: 2.25rem !important;
+        background: rgba(0, 0, 0, 0.62) !important;
         color: #fff !important;
       }
     }
@@ -964,12 +1285,15 @@ onBeforeUnmount(() => {
         border: 0.125rem solid #fff;
         border-radius: 999rem;
         color: #fff;
-        font-size: .875rem;
+        font-size: 0.875rem;
         font-weight: 600;
         line-height: 1;
         cursor: pointer;
         transform: translate(-50%, -50%);
-        transition: box-shadow 0.18s ease, width 0.18s ease, height 0.18s ease;
+        transition:
+          box-shadow 0.18s ease,
+          width 0.18s ease,
+          height 0.18s ease;
 
         .map-point-order {
           display: grid;
@@ -1017,17 +1341,16 @@ onBeforeUnmount(() => {
           box-shadow: 0 0 0 0.375rem rgba(255, 255, 255, 0.28);
         }
       }
-
     }
 
     .postcard-preview {
       position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
       aspect-ratio: 600 / 424;
       background: #fff;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
 
       &::after {
         content: "";
@@ -1048,44 +1371,43 @@ onBeforeUnmount(() => {
       }
 
       .postcard-loading {
-        text-align: center;
-        padding: 3em;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         gap: 0.875rem;
+        padding: 3em;
         color: #333;
+        text-align: center;
 
-          p {
-            margin: 0;
-          }
+        p {
+          margin: 0;
+        }
 
-          .loading-icons {
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            gap: 0.875rem;
+        .loading-icons {
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+          gap: 0.875rem;
 
-            img {
-              width: 2.5rem;
-              height: 2.5rem;
-              object-fit: contain;
-              animation: loading-bounce 0.9s ease-in-out infinite;
+          img {
+            width: 2.5rem;
+            height: 2.5rem;
+            object-fit: contain;
+            animation: loading-bounce 0.9s ease-in-out infinite;
 
-              &:nth-child(2) {
-                animation-delay: 0.12s;
-              }
+            &:nth-child(2) {
+              animation-delay: 0.12s;
+            }
 
-              &:nth-child(3) {
-                animation-delay: 0.24s;
-              }
+            &:nth-child(3) {
+              animation-delay: 0.24s;
             }
           }
+        }
       }
-      }
+    }
   }
-
 }
 
 @keyframes loading-bounce {
@@ -1101,12 +1423,27 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 980px) {
+  .flex-row {
+    flex-direction: column;
+  }
+}
+@media (max-width: 680px) {
   .tour-details-shell {
     flex-direction: column;
     gap: 1rem;
     height: auto;
     min-height: 100vh;
     padding: 1rem 1rem 1.25rem;
+
+    .tour-content-panels {
+      flex-direction: column;
+      gap: 1rem;
+      height: auto;
+
+      .side-panel {
+        width: 100%;
+      }
+    }
 
     .side-panel {
       padding: 0;

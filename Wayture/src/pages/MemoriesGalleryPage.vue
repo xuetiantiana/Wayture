@@ -15,15 +15,16 @@
         <p>加载中...</p>
       </div>
       <div v-else class="session-list">
-        <button
+        <div
           v-for="session in sessions"
           :key="session.id"
           class="session-item"
           :class="{ active: activeSessionId === session.id }"
           @click="selectSession(session.id)"
         >
-          <strong>{{ session.title }}</strong>
-          <span class="session-meta">
+          <p><strong>{{ session.title }}</strong></p>
+          <p>
+            <span class="session-meta">
             {{ formatDate(session.created_at) }} ·
             {{ (session.status === 'pending' || session.status === 'processing') && session.images.length === 0
               ? '生成中'
@@ -31,7 +32,8 @@
                 ? '生成失败'
                 : `使用${session.source_photo_count ?? 0}张照片生成` }}
           </span>
-        </button>
+          </p>
+        </div>
       </div>
     </aside>
 
@@ -322,8 +324,9 @@ onBeforeUnmount(() => {
     height: 100%;
     min-height: 0;
     overflow: hidden;
-    padding: 1.4rem 1.2rem;
-    background: #f4f4f4;
+    padding: 1.4rem 0 1.4rem 1.2rem;
+    padding-right: 0rem !important;
+    background: #fff;
 
     .sidebar-header {
       display: flex;
@@ -364,23 +367,16 @@ onBeforeUnmount(() => {
       overflow-y: auto;
 
       .session-item {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        width: 100%;
-        min-height: 3rem;
+        
+        width: calc(100% - 1.5rem);
         padding: 0.625rem 0.75rem;
-        border: 0;
         border-radius: 0.5rem;
-        background: transparent;
-        color: inherit;
-        text-align: left;
         cursor: pointer;
-        transition: background 0.18s;
 
         strong {
           font-weight: 500;
         }
+        line-height: 1.6;
 
         &:hover {
           background: #ececec;
@@ -623,7 +619,7 @@ onBeforeUnmount(() => {
   object-fit: contain;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 640px) {
   .gallery-page {
     grid-template-columns: 1fr;
     height: auto;

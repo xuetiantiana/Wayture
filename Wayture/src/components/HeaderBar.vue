@@ -95,7 +95,7 @@ function openSettings() {
 
   .header-actions {
     position: absolute;
-    right: 4rem;
+    right: 2rem;
     top: 1em;
     z-index: 9;
     display: inline-flex;

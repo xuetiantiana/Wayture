@@ -312,7 +312,7 @@ onMounted(() => {
     position: relative;
     display: flex;
     min-height: 100vh;
-    padding: 4.375rem 7.5% 5rem;
+    padding: 4.875rem;
     background:
       radial-gradient(circle at 77% 9%, rgba(222, 230, 136, 0.5), transparent 25%),
       linear-gradient(145deg, #b5bb70 0%, #9aaa55 100%);
@@ -320,7 +320,7 @@ onMounted(() => {
     .back-button {
       position: absolute;
       top: 2.375rem;
-      left: 3.375rem;
+      left: 4.875rem;
       display: grid;
       place-items: center;
       width: 2.5rem;
@@ -335,7 +335,6 @@ onMounted(() => {
 
     .hero-content {
       width: 100%;
-      max-width: 35.625rem;
 
       h1 {
         margin: 4rem 0 3rem 0;
@@ -649,7 +648,7 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 640px) {
   .memories-page {
     grid-template-columns: 1fr;
     overflow: auto;
