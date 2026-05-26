@@ -445,9 +445,9 @@ onBeforeUnmount(() => {
     }
 
     .gallery-strip {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      display: flex;
       align-content: flex-start;
+      flex-wrap: wrap;
       gap: 1.25rem;
       flex: 1;
       min-height: 0;
@@ -455,19 +455,19 @@ onBeforeUnmount(() => {
       padding-bottom: 0.625rem;
 
       &.single-journal-image {
-        grid-template-columns: minmax(0, 40rem);
-        align-content: center;
+        align-items: center;
         justify-content: center;
         overflow-y: auto;
 
         .gallery-item {
-          width: min(100%, 40rem);
-          max-width: 40rem;
+          flex: 0 0 70%;
+          width: 70%;
           margin-block: auto;
         }
       }
 
       .gallery-item {
+        flex: 0 0 calc((100% - 3.75rem) / 4);
         overflow: hidden;
         border: 0;
         border-radius: 0;
@@ -476,6 +476,7 @@ onBeforeUnmount(() => {
         transition: transform 0.2s;
         background: #f9f9f9;
         border-radius: 0.5rem;
+        min-width: 300px;
 
         &:hover {
           transform: translateY(-0.125rem);
@@ -483,14 +484,14 @@ onBeforeUnmount(() => {
 
         .gallery-image-shell {
           position: relative;
+          aspect-ratio: 1536 / 1024;
+          background: #f3f3f3;
         }
 
         .gallery-image {
           display: block;
           width: 100%;
-          height: auto;
-          min-height: 25rem;
-          background: #f3f3f3;
+          height: 100%;
           object-fit: contain;
         }
 
@@ -641,17 +642,6 @@ onBeforeUnmount(() => {
       height: auto;
       min-height: 0;
       overflow-y: visible;
-
-      .gallery-strip {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-  }
-}
-
-@media (max-width: 640px) {
-  .gallery-page {
-    .gallery-main {
       padding: 1.5rem 1.125rem;
 
       .gallery-header {
@@ -660,26 +650,22 @@ onBeforeUnmount(() => {
       }
 
       .gallery-strip {
-        grid-template-columns: 1fr;
         gap: 1.125rem;
         overflow: visible;
 
         &.single-journal-image {
-          grid-template-columns: minmax(0, 1fr);
           justify-content: stretch;
 
           .gallery-item {
+            flex-basis: 100%;
             width: 100%;
-            max-width: 45rem;
+            max-width: 100%;
           }
         }
 
         .gallery-item {
+          flex-basis: 100%;
           width: 100%;
-
-          .gallery-image {
-            min-height: 52vw;
-          }
         }
       }
     }

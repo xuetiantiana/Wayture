@@ -57,7 +57,7 @@
           </template>
           <template v-else-if="isPostcardPending">
             <el-button type="primary" :loading="true" disabled>
-              明信片生成中
+              地图生成中
             </el-button>
           </template>
           <template v-else>
@@ -65,7 +65,7 @@
               class="map-action map-action-confirm"
               :class="{ disabled: !canGeneratePostcard }"
               @click="generatePostcard()"
-              >☼ 生成明信片</span
+              >☼ 生成地图</span
             >
           </template>
         </div>
