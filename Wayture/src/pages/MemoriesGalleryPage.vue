@@ -2,7 +2,7 @@
   <section class="gallery-page">
     <aside class="session-sidebar">
       <button class="back-button" type="button" @click="router.push('/memories')">
-        &lsaquo;
+        <el-icon><ArrowLeftBold /></el-icon>
       </button>
 
       <div class="album-label">
@@ -20,11 +20,16 @@
           :key="session.id"
           class="session-item"
           :class="{ active: activeSessionId === session.id }"
-          @click="activeSessionId = session.id"
+          @click="selectSession(session.id)"
         >
           <strong>{{ session.title }}</strong>
           <span class="session-meta">
-            {{ formatDate(session.created_at) }} · 共{{ session.generated_image_count }}张
+            {{ formatDate(session.created_at) }} ·
+            {{ (session.status === 'pending' || session.status === 'processing') && session.images.length === 0
+              ? '生成中'
+              : (session.status === 'failed' || session.status === 'error')
+                ? '生成失败'
+                : `使用${session.source_photo_count ?? 0}张照片生成` }}
           </span>
         </button>
       </div>
@@ -35,22 +40,48 @@
         <div class="gallery-header">
           <div>
             <h1>{{ activeSession.title }}</h1>
-            <p>{{ formatDate(activeSession.created_at) }} · 共{{ activeSession.generated_image_count }}张</p>
+            <p>{{ formatDate(activeSession.created_at) }} · 使用{{ activeSession.source_photo_count ?? 0 }}张照片生成</p>
           </div>
-          <button class="download-button" type="button">↓ 下载</button>
+          <!-- <button class="download-button" type="button">↓ 下载</button> -->
         </div>
-        <div class="gallery-strip">
+        <div v-if="(activeSession.status === 'pending' || activeSession.status === 'processing') && activeSession.images.length === 0" class="gallery-pending">
+          <div class="loading-icons">
+            <img :src="icon1" alt="" />
+            <img :src="icon2" alt="" />
+            <img :src="icon3" alt="" />
+          </div>
+          <p>内容正在生成中，等待时间可能稍长，<br/>你可以稍后查看...</p>
+        </div>
+        <div v-else-if="activeSession.status === 'failed' || activeSession.status === 'error'" class="empty-state">
+          <p>生成失败，请返回重新生成。</p>
+          <button class="button-primary" @click="router.push('/memories')">返回上传页</button>
+        </div>
+        <div
+          v-else
+          class="gallery-strip"
+          :class="{ 'single-journal-image': isSingleJournalImage }"
+          :key="activeSession.id"
+        >
           <div
             v-for="(img, index) in activeSession.images"
-            :key="img.index"
+            :key="`${activeSession.id}-${img.index}`"
             class="gallery-item"
           >
-            <img
-              class="gallery-image"
-              :src="normalizeUrl(img.generated_url)"
-              :alt="img.description || '回忆'"
-              @click="openPreview(index)"
-            >
+            <div class="gallery-image-shell">
+              <img
+                class="gallery-image"
+                :src="normalizeUrl(img.generated_url)"
+                :alt="img.description || '回忆'"
+                @click="openPreview(index)"
+              >
+              <button
+                class="image-download-button"
+                type="button"
+                @click.stop="downloadGalleryImage(img)"
+              >
+                {{ downloadingImageKey === `${activeSession.id}-${img.index}` ? 'Downloading' : 'Download' }}
+              </button>
+            </div>
             <p v-if="img.description" class="gallery-desc">{{ img.description }}</p>
           </div>
         </div>
@@ -75,13 +106,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, onBeforeUnmount, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElImageViewer } from 'element-plus';
-import { Clock } from '@element-plus/icons-vue';
+import { ArrowLeftBold, Clock } from '@element-plus/icons-vue';
 import { useTourStore, type GallerySession } from '../composables/useTourStore';
+import icon1 from '../assets/images/icon1.png';
+import icon2 from '../assets/images/icon2.png';
+import icon3 from '../assets/images/icon3.png';
 
 type GalleryType = 'journal' | 'album';
+type GallerySessionWithTask = GallerySession & {
+  status?: string;
+  task_id?: string;
+  error?: string;
+};
 
 const router = useRouter();
 const route = useRoute();
@@ -89,6 +128,9 @@ const tour = useTourStore();
 const isLoadingSessions = ref(false);
 const isPreviewVisible = ref(false);
 const previewIndex = ref(0);
+const downloadingImageKey = ref('');
+const taskPollInterval = 30000;
+const taskTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 const galleryType = computed<GalleryType>(() => {
   const type = String(route.query.type || '').toLowerCase();
@@ -98,12 +140,13 @@ const galleryLabel = computed(() => galleryType.value === 'journal' ? '回忆手
 const emptyText = computed(() => galleryType.value === 'journal'
   ? '暂无回忆日志，请先上传照片并生成日志。'
   : '暂无回忆图册，请先上传照片并生成图册。');
-const sessions = ref<GallerySession[]>([]);
+const sessions = ref<GallerySessionWithTask[]>([]);
 const activeSessionId = ref<string | null>(sessions.value[0]?.id ?? null);
-const activeSession = computed<GallerySession | undefined>(
+const activeSession = computed<GallerySessionWithTask | undefined>(
   () => sessions.value.find((s) => s.id === activeSessionId.value)
 );
 const previewList = computed(() => activeSession.value?.images.map((img) => normalizeUrl(img.generated_url)).filter(Boolean) || []);
+const isSingleJournalImage = computed(() => galleryType.value === 'journal' && activeSession.value?.images.length === 1);
 
 function normalizeUrl(url: string): string {
   return tour.normalizeImageUrl(url);
@@ -114,14 +157,118 @@ function openPreview(index: number) {
   isPreviewVisible.value = true;
 }
 
+function getImageExtension(url: string): string {
+  const pathname = url.split('?')[0] || '';
+  const match = pathname.match(/\.([a-zA-Z0-9]+)$/);
+  return match?.[1] || 'png';
+}
+
+async function downloadGalleryImage(img: GallerySession['images'][number]) {
+  const url = normalizeUrl(img.generated_url);
+  if (!url || !activeSession.value || downloadingImageKey.value) return;
+
+  const imageKey = `${activeSession.value.id}-${img.index}`;
+  const filename = `wayture-memory-${imageKey}.${getImageExtension(url)}`;
+  downloadingImageKey.value = imageKey;
+
+  try {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.click();
+  } catch (error) {
+    console.warn('下载回忆图片失败:', error);
+  } finally {
+    downloadingImageKey.value = '';
+  }
+}
+
+function selectSession(sessionId: string) {
+  if (activeSessionId.value === sessionId) return;
+  isPreviewVisible.value = false;
+  previewIndex.value = 0;
+  activeSessionId.value = sessionId;
+}
+
 function formatDate(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
-async function loadSessions(type: GalleryType) {
-  isLoadingSessions.value = true;
-  activeSessionId.value = null;
+function stopTaskPolling(sessionId?: string) {
+  if (sessionId) {
+    const timer = taskTimers.get(sessionId);
+    if (timer) clearTimeout(timer);
+    taskTimers.delete(sessionId);
+    return;
+  }
+
+  taskTimers.forEach((timer) => clearTimeout(timer));
+  taskTimers.clear();
+}
+
+function scheduleTaskPolling(session: GallerySessionWithTask) {
+  const taskId = session.task_id || '';
+  if (!taskId || taskTimers.has(session.id)) return;
+
+  const timer = setTimeout(() => {
+    taskTimers.delete(session.id);
+    pollSessionTask(session.id, taskId);
+  }, taskPollInterval);
+  taskTimers.set(session.id, timer);
+}
+
+function updateSession(sessionId: string, patch: Partial<GallerySessionWithTask>) {
+  sessions.value = sessions.value.map((session) =>
+    session.id === sessionId ? { ...session, ...patch } : session,
+  );
+}
+
+async function pollSessionTask(sessionId: string, taskId: string) {
+  const session = sessions.value.find((item) => item.id === sessionId);
+  if (!session || session.task_id !== taskId) return;
+
+  try {
+    const username = encodeURIComponent(tour.currentUsername.value);
+    const resp = await fetch(`${tour.apiBase}/api/tasks/${username}/${encodeURIComponent(taskId)}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    if (data.status === 'completed') {
+      await loadSessions(galleryType.value, false);
+      stopTaskPolling(sessionId);
+      return;
+    }
+
+    if (data.status === 'failed' || data.status === 'error') {
+      updateSession(sessionId, { status: data.status, error: data.error || data.message || '生成失败' });
+      stopTaskPolling(sessionId);
+      return;
+    }
+
+    scheduleTaskPolling(session);
+  } catch (e) {
+    console.warn('查询回忆生成任务失败:', e);
+    scheduleTaskPolling(session);
+  }
+}
+
+function startPendingSessionPolling() {
+  sessions.value.forEach((session) => {
+    if ((session.status === 'pending' || session.status === 'processing') && session.images.length === 0 && session.task_id) {
+      pollSessionTask(session.id, session.task_id);
+    }
+  });
+}
+
+async function loadSessions(type: GalleryType, showLoading = true) {
+  stopTaskPolling();
+  if (showLoading) {
+    isLoadingSessions.value = true;
+    activeSessionId.value = null;
+  }
   try {
     const resource = type === 'journal' ? 'journals' : 'albums';
     const username = encodeURIComponent(tour.currentUsername.value);
@@ -129,22 +276,31 @@ async function loadSessions(type: GalleryType) {
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
     sessions.value = Array.isArray(data)
-      ? data
-      : data[resource] || data.sessions || data.items || [];
+      ? [...data].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      : [];
     if (sessions.value.length > 0) {
-      activeSessionId.value = sessions.value[0].id;
+      activeSessionId.value = activeSessionId.value && sessions.value.some((session) => session.id === activeSessionId.value)
+        ? activeSessionId.value
+        : sessions.value[0].id;
     }
+    startPendingSessionPolling();
   } catch (e) {
     console.warn('加载回忆列表失败:', e);
     sessions.value = [];
   } finally {
-    isLoadingSessions.value = false;
+    if (showLoading) {
+      isLoadingSessions.value = false;
+    }
   }
 }
 
 watch(galleryType, (type) => {
   loadSessions(type);
 }, { immediate: true });
+
+onBeforeUnmount(() => {
+  stopTaskPolling();
+});
 </script>
 
 <style scoped lang="scss">
@@ -153,21 +309,25 @@ watch(galleryType, (type) => {
   z-index: 555;
   display: grid;
   grid-template-columns: 20rem 1fr;
-  min-height: 100vh;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
   background: #fff;
   color: #222;
 
   .session-sidebar {
     box-sizing: border-box;
-    min-height: 100vh;
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
     padding: 1.4rem 1.2rem;
     background: #f4f4f4;
 
     .back-button {
       display: grid;
       place-items: center;
-      width: 2.125rem;
-      height: 2.125rem;
+      width: 2.5rem;
+      height: 2.5rem;
       margin-bottom: 2rem;
       border: 0;
       border-radius: 0.5625rem;
@@ -196,8 +356,6 @@ watch(galleryType, (type) => {
       display: flex;
       flex-direction: column;
       gap: .5rem;
-      max-height: calc(100vh - 8.125rem);
-      overflow-y: auto;
 
       .session-item {
         display: flex;
@@ -235,8 +393,13 @@ watch(galleryType, (type) => {
   }
 
   .gallery-main {
+    display: flex;
+    flex-direction: column;
     box-sizing: border-box;
     min-width: 0;
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
     padding: 2rem 1.75rem;
 
     .gallery-header {
@@ -278,8 +441,22 @@ watch(galleryType, (type) => {
       display: flex;
       align-items: flex-start;
       gap: 1.25rem;
+      flex: 1;
+      min-height: 0;
       overflow-x: auto;
       padding-bottom: 0.625rem;
+
+      &.single-journal-image {
+        align-items: center;
+        justify-content: center;
+        overflow-x: visible;
+
+        .gallery-item {
+          flex: 0 1 46.875rem;
+          width: min(100%, 46.875rem);
+          max-width: 46.875rem;
+        }
+      }
 
       .gallery-item {
         flex: 0 0 19.0625rem;
@@ -296,13 +473,38 @@ watch(galleryType, (type) => {
           transform: translateY(-0.125rem);
         }
 
+        .gallery-image-shell {
+          position: relative;
+        }
+
         .gallery-image {
           display: block;
           width: 100%;
           height: auto;
-          min-height: 10.625rem;
+          min-height: 30rem;
           background: #f3f3f3;
           object-fit: contain;
+        }
+
+        .image-download-button {
+          position: absolute;
+          right: 1rem;
+          bottom: 1rem;
+          padding: 0.3em 1.25rem;
+          border: 0;
+          border-radius: 0.625rem;
+          background: rgba(0, 0, 0, 0.62);
+          color: #fff;
+          font-size: 1rem;
+          box-shadow: 0 0.375rem 1rem rgba(0, 0, 0, 0.2);
+          cursor: pointer;
+          backdrop-filter: blur(0.25rem);
+          transition: background 0.18s ease, transform 0.18s ease;
+
+          &:hover {
+            background: rgba(0, 0, 0, 0.76);
+            transform: translateY(-0.0625rem);
+          }
         }
 
         .gallery-desc {
@@ -343,11 +545,60 @@ watch(galleryType, (type) => {
     color: #94a3b8;
     text-align: center;
   }
+
+  .gallery-pending {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.875rem;
+    min-height: 30rem;
+    color: #333;
+
+    p {
+      margin: 0;
+      text-align: center;
+    }
+
+    .loading-icons {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 0.875rem;
+
+      img {
+        width: 2.5rem;
+        height: 2.5rem;
+        object-fit: contain;
+        animation: loading-bounce 0.9s ease-in-out infinite;
+
+        &:nth-child(2) {
+          animation-delay: 0.12s;
+        }
+
+        &:nth-child(3) {
+          animation-delay: 0.24s;
+        }
+      }
+    }
+  }
 }
 
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes loading-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+
+  40% {
+    transform: translateY(-0.625rem);
   }
 }
 
@@ -365,9 +616,20 @@ watch(galleryType, (type) => {
 @media (max-width: 980px) {
   .gallery-page {
     grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
 
     .session-sidebar {
+      height: auto;
       min-height: auto;
+      overflow-y: visible;
+    }
+
+    .gallery-main {
+      height: auto;
+      min-height: 0;
+      overflow-y: visible;
     }
   }
 }
@@ -386,6 +648,16 @@ watch(galleryType, (type) => {
         flex-direction: column;
         gap: 1.125rem;
         overflow-x: visible;
+
+        &.single-journal-image {
+          align-items: center;
+          justify-content: center;
+
+          .gallery-item {
+            width: min(100%, 46.875rem);
+            max-width: 46.875rem;
+          }
+        }
 
         .gallery-item {
           flex: none;

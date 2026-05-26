@@ -6,16 +6,16 @@
 
         <template v-if="step === 1">
           <div class="modal-header">
-            <h3>Welcome to FamilyFest!🎈</h3>
+            <h3>欢迎来到FamilyFest 🎈</h3>
           </div>
-          <p class="modal-subtitle">Today’s adventure begins here.</p>
+          <p class="modal-subtitle">今天的冒险从这里开始</p>
 
           <div class="modal-body">
             <div class="step-content">
               <input
                 v-model="nickname"
                 type="text"
-                placeholder="Pick a fun nickname for your adventure! eg:The XiaoQi Family Passport"
+                placeholder="给你的冒险之旅取一个有趣的昵称吧！例如：小奇一家冒险之旅"
                 class="nickname-input"
                 @keyup.enter="nextStep"
               />
@@ -23,13 +23,13 @@
           </div>
 
           <div class="modal-footer">
-            <button class="btn-primary" :disabled="!canProceed" @click="nextStep">Next</button>
+            <button class="btn-primary" :disabled="!canProceed" @click="nextStep">下一步</button>
           </div>
         </template>
 
         <template v-else-if="step === 2">
           <div class="modal-header">
-            <h3>Choose your travel style</h3>
+            <h3>选择你的冒险风格 ✨</h3>
           </div>
           <p class="modal-subtitle">Pick the vibe for this adventure.</p>
 
@@ -78,11 +78,11 @@ const nickname = ref('');
 const selectedStyle = ref('');
 
 const tourStyles = [
-  { value: 'Family Adventure', name: 'Family Adventure', icon: '👨‍👩‍👧', desc: '' },
-  { value: 'Couple Escape', name: 'Couple Escape', icon: '💕', desc: '' },
-  { value: 'Parent & Kid Day', name: 'Parent & Kid Day', icon: '🧸', desc: '' },
-  { value: 'Solo Journey', name: 'Solo Journey', icon: '🌿', desc: '' },
-  { value: 'Friends Trip', name: 'Friends Trip', icon: '🎉', desc: '' }
+  { value: '家庭冒险', name: '家庭冒险', icon: '👨‍👩‍👧', desc: '' },
+  { value: '情侣出逃', name: '情侣出逃', icon: '💕', desc: '' },
+  { value: '亲子时光', name: '亲子时光', icon: '🧸', desc: '' },
+  { value: '一个人的旅程', name: '一个人的旅程', icon: '🌿', desc: '' },
+  { value: '好友旅行', name: ' 好友旅行', icon: '🎉', desc: '' }
 ];
 
 const canProceed = computed(() => {
@@ -196,7 +196,7 @@ function closeOnOverlay() {
       h3 {
         margin: 0;
         color: #f8fafc;
-        font-size: 40px;
+        font-size: 2.5rem;
         line-height: 1.15;
         font-weight: 600;
         text-align: center;
@@ -206,7 +206,7 @@ function closeOnOverlay() {
     .modal-subtitle {
       margin: 4px 0 0;
       color: rgba(255, 255, 255, 0.62);
-      font-size: 24px;
+      font-size: 1.5rem;
       line-height: 1.25;
       text-align: center;
     }
@@ -225,7 +225,7 @@ function closeOnOverlay() {
           border-radius: 8px;
           background: rgba(255, 255, 255, 0.04);
           color: #f8fafc;
-          font-size: 18px;
+          font-size: 1.125rem;
           transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
 
           &::placeholder {
@@ -307,7 +307,7 @@ function closeOnOverlay() {
         padding: 0 24px;
         border: none;
         border-radius: 8px;
-        font-size: 20px;
+        font-size: 1.25rem;
         font-weight: 500;
         cursor: pointer;
         transition: all 0.2s;

@@ -3,7 +3,7 @@ import { ref } from 'vue';
 const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 const redirectUri = isLocalhost
     ? `${window.location.origin}`
-    : `${window.location.origin}/Wayture/`;
+    : `${window.location.origin}`;
 const msalConfig = {
     auth: {
         clientId: 'f120c81b-70e1-4da9-82f2-ac0278329dda',

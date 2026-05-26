@@ -3,8 +3,8 @@
     <div class="panel-card" style="position: relative;">
       <div class="main-tabbar">
         <div class="tab-group">
-          <button class="tab-button" :class="{ active: activeTab === 'map' }" @click="setTab('map')">Map</button>
-          <button class="tab-button" :class="{ active: activeTab === 'list' }" @click="setTab('list')">List</button>
+          <button class="tab-button" :class="{ active: activeTab === 'map' }" @click="setTab('map')">地图</button>
+          <button class="tab-button" :class="{ active: activeTab === 'list' }" @click="setTab('list')">列表</button>
         </div>
       </div>
       <div v-show="activeTab === 'map'" class="map-card">
@@ -59,7 +59,7 @@
       </div>
       <AttractionListView
         class="list-view-host"
-        :class="{ 'list-view-host--hidden': activeTab !== 'list' }"
+        v-show="activeTab === 'list'"
         :points="points"
         :selected-ids="selectedIds"
         :field-color-map="fieldColorMap"
@@ -69,7 +69,7 @@
         @add="addPoint"
       />
       <ul class="tour-list-case">
-        <p>Fixed theme route</p>
+        <p>主题路线</p>
         <li v-for="item in tourCases" :key="item.name" @click="applyTourCase(item.ids)">{{ item.label }}</li>
       </ul>
     </div>
@@ -100,9 +100,14 @@
             </span>
           </li>
         </ul>
-        <button class="button-primary full-width" :disabled="selectedPoints.length === 0 || routeLoading" @click="generateTour">
-          {{ routeLoading ? '路线生成中...' : '生成完整路线 →' }}
+        <div class="popup-footer">
+          <button class="button-clear" type="button" :disabled="selectedPoints.length === 0 || routeLoading" @click="clearSelectedPoints">
+            一键清空
+          </button>
+          <button class="button-generate" :disabled="selectedPoints.length === 0 || routeLoading" @click="generateTour">
+          {{ routeLoading ? '地图生成中...' : '生成地图 ' }}
         </button>
+        </div>
       </template>
     </div>
   </section>
@@ -136,17 +141,17 @@ const detailModalStyle = ref<Record<string, string>>({});
 const tourCases = [
   {
     name: 'parent-kid-day',
-    label: '🧸 Parent & Kid Day',
+    label: '🧸 亲子时光',
     ids: [21, 22, 25, 35, 29, 24,26,1,2,3,4,5,7,8],
   },
   {
     name: 'thrill-seeker',
-    label: '🎢 Thrill Seeker',
+    label: '🎢 惊险挑战',
     ids: [11, 12, 17, 13, 16, 32],
   },
   {
     name: 'relax-wander',
-    label: '🌿 Relax & Wander',
+    label: '🌿 悠闲漫步',
     ids: [32, 25, 35, 15,9],
   },
 ];
@@ -205,6 +210,11 @@ function addPoint(id: number) {
 
 function removePoint(id: number) {
   tour.removePoint(id);
+}
+
+function clearSelectedPoints() {
+  tour.setSelectedIds([]);
+  closeSelectedPoint();
 }
 
 function goTourDetails() {
@@ -320,12 +330,10 @@ onMounted(async () => {
       font-size: 1.125em;
       border: none;
       background: transparent;
-      color: rgba(23, 68, 58, 1);
-      font-weight: 700;
+      color: #000;
       transition: background-color 0.2s ease, color 0.2s ease;
 
       &.active {
-        color: white;
         background: rgba(255, 183, 0, 1);
       }
     }
@@ -489,8 +497,8 @@ onMounted(async () => {
 
 .tour-list-case{
   position: absolute;
-  top: 50%;
-  right: 0.625rem;
+  top: 30%;
+  right: 1.625rem;
   z-index: 12;
   display: flex;
   flex-direction: column;
@@ -552,13 +560,13 @@ onMounted(async () => {
 
 .selected-popup {
   position: fixed;
-  right: 0.625rem;
+  right: 1.625rem;
   bottom: 0.625rem;
   width: min(19rem, calc(100% - 2rem));
   max-width: 22.5rem;
   background: rgba(0,0,0,0.42);
   border: 0.0625rem solid rgba(96, 165, 250, 0.35);
-  border-radius: 1.5rem;
+  border-radius: 15px;
   backdrop-filter: blur(1.25rem);
   z-index: 40;
   overflow: hidden;
@@ -683,15 +691,38 @@ onMounted(async () => {
     justify-content: flex-end;
     gap: 0.75rem;
     margin-top: auto;
+    padding: 0.5rem 1.125rem;
+    button{
+      border-radius: 8px;
+      height: 2.5rem;
+      border: none;
+    }
+    .button-generate{
+      background: rgb(255, 183, 0);
+      color: #000;
+      flex: 1;
+    }
+    .button-clear {
+    padding: 0 1rem;
+    border: 0;
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+    cursor: pointer;
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+  }
   }
 
-  .button-primary.full-width {
-    background: linear-gradient(90deg, #ffc400 0%, #ff9f0a 100%);
-  }
+  
+
+
 }
 
 .full-width {
-  width: 100%;
+  width: auto;
   border-radius: 0 0 1.5rem 1.5rem;
   margin-top: 0.75rem;
 }

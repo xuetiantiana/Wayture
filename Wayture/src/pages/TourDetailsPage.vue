@@ -1,23 +1,19 @@
 <template>
   <section class="flex-row tour-details-shell">
     <aside class="panel-card p-24 side-panel">
-      <div class="flex-row justify-between align-center mb-20">
-        <div>
+      <div class="details-topbar">
+        <div class="details-title-row">
+          <button class="details-back-button" type="button" aria-label="返回" @click="editMap">
+            <el-icon><ArrowLeftBold /></el-icon>
+          </button>
           <h2 class="section-title">游览详情</h2>
-          <p class="subtitle">
-            {{ activeRouteSummary || "AI 正在为你规划最佳游览路线。" }}
-          </p>
-          <select
-            v-if="allTourList.length > 0"
-            class="route-record-select"
-            :value="activeTourRecordId || ''"
-            @change="selectTourRecord"
-          >
-            <option v-for="record in allTourList" :key="record.id" :value="record.id">
-              {{ record.title }}
-            </option>
-          </select>
+          <button class="tour-map-button" type="button" aria-label="游览地图" @click="isTourListOpen = true">
+            <img :src="listIcon" alt="" />
+          </button>
         </div>
+        <p class="subtitle">
+          {{ activeRouteSummary || "AI 正在为你规划最佳游览路线。" }}
+        </p>
       </div>
 
       <!-- 加载状态 -->
@@ -41,7 +37,6 @@
           :class="{ active: activeHighlightId === point.id }"
           @mouseenter="setHoverPoint(point.id)"
           @mouseleave="clearHoverPoint"
-          @click="setHighlight(point.id)"
         >
           <div class="step-number">
             <img
@@ -67,6 +62,31 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <div
+        v-if="isTourListOpen"
+        class="tour-list-layer"
+        @click.self="isTourListOpen = false"
+      >
+        <aside class="tour-list-drawer" role="dialog" aria-modal="true" aria-label="游览列表">
+          <header class="tour-list-header">
+            <strong>{{ activeTourTitle }}</strong>
+            <button type="button" aria-label="关闭游览列表" @click="isTourListOpen = false">×</button>
+          </header>
+          <div class="tour-list-body">
+            <button
+              v-for="record in allTourList"
+              :key="record.id"
+              class="tour-list-item"
+              :class="{ active: activeTourRecordId === record.id }"
+              type="button"
+              @click="selectTourRecordById(record.id)"
+            >
+              {{ record.title }}
+            </button>
+          </div>
+        </aside>
       </div>
     </aside>
     <section class="map-panel panel-card p-24">
@@ -99,11 +119,11 @@
           </template>
         </div>
       </div>
-      <div style="flex: 1; overflow: auto;padding: 2em 0;">
+      <div class="map-scroll-area">
         <div
           ref="downloadContainer"
           :style="{
-            width: isPostcardPending || postcardImageUrl ? '645px' : '1000px',
+            width: '645px',
             margin: '0 auto',
             maxWidth: '100%',
           }"
@@ -126,7 +146,6 @@
               :style="getMapPointStyle(point)"
               @mouseenter="setHoverPoint(point.id)"
               @mouseleave="clearHoverPoint"
-              @click="setHighlight(point.id)"
             >
               <span v-if="routePlanned && isRoutePoint(point.id)">
                 {{ getRouteOrder(point.id) }}
@@ -145,11 +164,18 @@
               </div>
               <p>地图正在生成中，等待时间可能稍长，<br/>你可以稍后查看...</p>
             </div>
-            <img v-else :src="postcardImageUrl" alt="明信片" width="100%" />
+            <img
+              v-else
+              :key="`${activeTourRecordId}-${postcardImageUrl}`"
+              :src="postcardImageUrl"
+              alt="明信片"
+              width="100%"
+            />
           </div>
         </div>
       </div>
     </section>
+
   </section>
 </template>
 
@@ -157,10 +183,12 @@
 import html2canvas from "html2canvas";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import { ArrowLeftBold } from "@element-plus/icons-vue";
 import { useTourStore } from "../composables/useTourStore";
 import icon1 from "../assets/images/icon1.png";
 import icon2 from "../assets/images/icon2.png";
 import icon3 from "../assets/images/icon3.png";
+import listIcon from "../assets/images/list.png";
 import { getFieldColor } from "../data/fieldConfig";
 
 const router = useRouter();
@@ -172,8 +200,9 @@ const downloadContainer = ref<HTMLElement | null>(null);
 const imageDownloading = ref(false);
 const promptParts = ref<string[]>([]);
 const routeError = ref("");
-const highlightId = ref<number | null>(null);
 const hoverPointId = ref<number | null>(null);
+const isTourListOpen = ref(false);
+const postcardPollInterval = 30000;
 let postcardPollTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 当前页面只展示 allTourList 中正在激活的路线记录。
@@ -191,7 +220,7 @@ const postcardImageUrl = computed(() =>
 const isPostcardPending = computed(() => activeTourRecord.value?.postcardStatus === "pending");
 const displayError = computed(() => routeError.value || activeTourRecord.value?.postcardError || "");
 const routePlanned = computed(() => (activeTourRecord.value?.routePlan.length ?? 0) > 0);
-const activeHighlightId = computed(() => hoverPointId.value ?? highlightId.value);
+const activeHighlightId = computed(() => hoverPointId.value);
 
 // 生成明信片依赖当前路线记录，不再依赖临时页面状态。
 const canGeneratePostcard = computed(
@@ -202,10 +231,14 @@ const canGeneratePostcard = computed(
     !!activeTourRecord.value,
 );
 
+const userDisplayName = computed(
+  () => tour.userSettings.value.nickname || tour.currentUsername.value || "Wayture",
+);
+
 // 顶部标题跟随当前路线记录切换。
 const activeTourTitle = computed(() => {
   const record = allTourList.value.find((item) => item.id === activeTourRecordId.value);
-  return record?.title || "小七幸福一家尺木神奇世界一日游";
+  return record?.title || `${userDisplayName.value}幸福一家尺木神奇世界一日游`;
 });
 
 const activeRouteSummary = computed(() => activeTourRecord.value?.routeSummary || "");
@@ -251,10 +284,6 @@ function isRoutePoint(id: number) {
   return activeTourRecord.value?.selectedIds.includes(id) ?? false;
 }
 
-function setHighlight(id: number) {
-  highlightId.value = id;
-}
-
 function setHoverPoint(id: number) {
   hoverPointId.value = id;
 }
@@ -263,21 +292,22 @@ function clearHoverPoint() {
   hoverPointId.value = null;
 }
 
-// 切换历史路线时，store 会同步当前 allTourList 激活记录。
-function selectTourRecord(event: Event) {
-  const target = event.target as HTMLSelectElement;
-  const selected = tour.setActiveTourRecord(target.value);
+function selectTourRecordById(recordId: string, closeDrawer = true) {
+  const selected = tour.setActiveTourRecord(recordId);
   if (!selected) return;
 
+  if (closeDrawer) {
+    isTourListOpen.value = false;
+  }
+
+  hoverPointId.value = null;
   routeError.value = "";
   stopPostcardPolling();
   autoGeneratePostcard();
 }
 
 function editMap() {
-  if (isPostcardPending.value) {
-    return;
-  }
+  
 
   router.push("/main");
 }
@@ -313,12 +343,12 @@ function stopPostcardPolling() {
   }
 }
 
-// 后端图片生成是异步任务，这里按固定间隔查询当前任务状态。
+// 后端图片生成是异步任务，首次立即查询，后续按固定间隔查询当前任务状态。
 function schedulePostcardPolling(taskId: string) {
   stopPostcardPolling();
   postcardPollTimer = setTimeout(() => {
     pollPostcardTask(taskId);
-  }, 2000);
+  }, postcardPollInterval);
 }
 
 // 轮询 /api/tasks/{username}/{task_id}，完成后把结果写回当前路线记录。
@@ -415,7 +445,8 @@ async function generatePostcard(additionPrompt = promptParts.value.join("\n")) {
       postcardData: data,
       postcardError: "",
     });
-    schedulePostcardPolling(taskId);
+    stopPostcardPolling();
+    pollPostcardTask(taskId);
   } catch (error) {
     console.error("生成明信片出错:", error);
     tour.updateTourRecord(record.id, {
@@ -431,7 +462,8 @@ function autoGeneratePostcard() {
   if (!record || !routePlanned.value) return;
 
   if (record.postcardStatus === "pending" && record.postcardTaskId) {
-    schedulePostcardPolling(record.postcardTaskId);
+    stopPostcardPolling();
+    pollPostcardTask(record.postcardTaskId);
     return;
   }
 
@@ -491,10 +523,6 @@ onMounted(async () => {
     return;
   }
 
-  if (!highlightId.value) {
-    highlightId.value = orderedPoints.value[0]?.id ?? null;
-  }
-
   autoGeneratePostcard();
 });
 
@@ -506,35 +534,91 @@ onBeforeUnmount(() => {
 <style scoped lang="scss">
 .tour-details-shell {
   position: relative;
-  gap: 1.5rem;
+  gap: 0;
   box-sizing: border-box;
   height: 100vh;
-  padding: 4em 2em 2em;
+  padding: 0em;
   background: #fff;
   color: #000;
   line-height: 1.6;
+  position: relative;
+  z-index: 555;
 
   .side-panel {
+    position: relative;
     display: flex;
     flex-direction: column;
-    width: 27%;
+    width:40%;
     min-width: 25rem;
-    max-width: 37.5rem;
-    overflow: auto;
+    max-width: 45rem;
+    overflow: visible;
+    padding: 0 2em;
 
-    .subtitle {
-      margin: 1.25rem 0;
+    .details-topbar {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding-top: .7rem;
+      margin-bottom: 1.25rem;
     }
 
-    .route-record-select {
-      width: 100%;
-      min-height: 2.5rem;
-      padding: 0 0.875rem;
-      border: 0.0625rem solid rgba(148, 163, 184, 0.35);
+    .details-title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+    }
+
+    .details-back-button {
+      display: grid;
+      place-items: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      border: 0;
       border-radius: 0.625rem;
-      background: #fff;
-      color: #111;
+      background: #2f2f2f;
+      color: #fff;
+      font-size: 1.2rem;
+      line-height: 1;
       cursor: pointer;
+    }
+
+    .tour-map-button {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 2.75rem;
+      height: 2.75rem;
+      padding: 0;
+      border: 0;
+      border-radius: 0.5rem;
+      background: transparent;
+      color: #111;
+      font-size: 2rem;
+      line-height: 1;
+      cursor: pointer;
+
+      &:hover {
+        background: #f1f1f1;
+      }
+
+      img {
+        display: block;
+        width: 2rem;
+        height: 2rem;
+        object-fit: contain;
+      }
+    }
+
+    .section-title{
+      flex: 1 1 auto;
+      margin: 0;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .subtitle {
+      margin: 0;
     }
 
     .route-error {
@@ -579,7 +663,7 @@ onBeforeUnmount(() => {
 
       .progress-item {
         display: grid;
-        grid-template-columns: 2.75rem 1fr;
+        grid-template-columns: 5rem 1fr;
         gap: 0.875rem;
         width: 100%;
         border-radius: 1.5rem;
@@ -593,10 +677,6 @@ onBeforeUnmount(() => {
           background: rgba(255, 183, 0, 0.12);
           box-shadow: inset 0 0 0 0.125rem rgba(255, 183, 0, 0.42);
 
-          .step-number {
-            box-shadow: 0 0 0 0.1875rem rgba(255, 183, 0, 0.72);
-          }
-
           .content-detail {
             background: rgba(255, 183, 0, 0.18);
           }
@@ -605,8 +685,8 @@ onBeforeUnmount(() => {
         .step-number {
           display: grid;
           place-items: center;
-          width: 2.75rem;
-          height: 2.75rem;
+          width: 4.5rem;
+          height: 4.5rem;
           overflow: hidden;
           border-radius: 1rem;
           background: rgba(59, 130, 246, 0.14);
@@ -653,10 +733,94 @@ onBeforeUnmount(() => {
     }
   }
 
+  .tour-list-layer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 100%;
+    z-index: 30;
+    width: min(34rem, calc(100vw - 100% - 1.5rem));
+    min-width: 24rem;
+    background: transparent;
+  }
+
+  .tour-list-drawer {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    background: #f5f5f5;
+    box-shadow: 0.25rem 0 1rem rgba(15, 23, 42, 0.08);
+
+    .tour-list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      min-height: 4rem;
+      padding: 0 2rem;
+      border-bottom: 0.0625rem solid #e2e2e2;
+      background: #fff;
+
+      strong {
+        min-width: 0;
+        overflow: hidden;
+        color: #111;
+        font-size: 1.125rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      button {
+        display: grid;
+        place-items: center;
+        flex: 0 0 auto;
+        width: 2rem;
+        height: 2rem;
+        border: 0;
+        border-radius: 0.375rem;
+        background: transparent;
+        color: #555;
+        font-size: 1.5rem;
+        line-height: 1;
+        cursor: pointer;
+      }
+    }
+
+    .tour-list-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 1.875rem 1.5rem;
+      overflow-y: auto;
+    }
+
+    .tour-list-item {
+      width: 100%;
+      min-height: 2.75rem;
+      padding: 0 1rem;
+      border: 0;
+      border-radius: 0.625rem;
+      background: transparent;
+      color: #222;
+      text-align: left;
+      cursor: pointer;
+
+      &.active {
+        background: #e5e5e5;
+      }
+
+      &:hover {
+        background: #ebebeb;
+      }
+    }
+  }
+
   .map-panel {
     display: flex;
     flex: 1;
     flex-direction: column;
+    min-width: 0;
     background-color: rgba(198, 185, 153, 1);
     overflow: hidden;
 
@@ -670,7 +834,7 @@ onBeforeUnmount(() => {
 
       strong {
         color: #111827;
-        font-size: 1rem;
+        font-size: 1.125rem;
       }
 
       .map-actions {
@@ -718,9 +882,22 @@ onBeforeUnmount(() => {
       }
     }
 
+    .map-scroll-area {
+      flex: 1;
+      min-width: 0;
+      overflow: auto;
+      padding: 2em 0;
+    }
+
+    .dowmload-container {
+      min-width: 0;
+    }
+
     .map-frame {
       position: relative;
       overflow: hidden;
+      width: 100%;
+      min-width: 0;
       margin: 0 auto;
 
       .map-image {
@@ -771,7 +948,7 @@ onBeforeUnmount(() => {
 
     .postcard-preview {
       position: relative;
-      aspect-ratio: 645 / 456;
+      aspect-ratio: 645 / 465;
       background: #fff;
       display: flex;
       flex-direction: column;
@@ -789,10 +966,11 @@ onBeforeUnmount(() => {
 
       img {
         display: block;
-        max-width: 100%;
-        max-height: 100%;
+        width: 100%;
+        height: 100%;
         position: relative;
         z-index: 2;
+        object-fit: cover;
       }
 
       .postcard-loading {
@@ -851,9 +1029,126 @@ onBeforeUnmount(() => {
 @media (max-width: 980px) {
   .tour-details-shell {
     flex-direction: column;
+    gap: 1rem;
+    height: auto;
+    min-height: 100vh;
+    padding: 1rem 1rem 1.25rem;
 
     .side-panel {
+      padding: 0;
       width: 100%;
+      min-width: 0;
+      max-width: none;
+      max-height: none;
+      overflow: visible;
+
+      .details-topbar {
+        padding-top: 0;
+      }
+
+      .progress-list {
+        flex: none;
+        max-height: 42vh;
+        gap: 0.875rem;
+        padding-right: 0.25rem;
+        padding-bottom: 0.5rem;
+
+        .progress-item {
+          grid-template-columns: 2.5rem 1fr;
+          gap: 0.75rem;
+          padding: 0.625rem;
+
+          .step-number {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.75rem;
+          }
+        }
+      }
+    }
+
+    .tour-list-layer {
+      position: fixed;
+      inset: 0 1rem 0 auto;
+      width: min(26rem, calc(100vw - 2rem));
+      min-width: 0;
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .map-panel {
+      flex: none;
+      min-height: 60vh;
+
+      .map-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 0.875rem;
+
+        .map-actions {
+          width: 100%;
+          flex-wrap: wrap;
+
+          .map-action {
+            flex: 1 1 8rem;
+            min-width: 0;
+          }
+        }
+      }
+
+      .map-scroll-area {
+        padding: 1rem 0;
+      }
+
+      .dowmload-container {
+        width: 100% !important;
+      }
+
+      .postcard-preview {
+        width: 100%;
+      }
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .tour-details-shell {
+    padding: 1rem 0.75rem 1rem;
+
+    .side-panel,
+    .map-panel {
+      border-radius: 0.75rem;
+    }
+
+    .side-panel {
+      .progress-list {
+        max-height: 48vh;
+
+        .progress-item {
+          border-radius: 1rem;
+
+          .step-content {
+            min-width: 0;
+
+            strong {
+              overflow-wrap: anywhere;
+            }
+          }
+        }
+      }
+    }
+
+    .map-panel {
+      .map-toolbar {
+        strong {
+          overflow-wrap: anywhere;
+        }
+      }
+
+      .postcard-preview {
+        .postcard-loading {
+          padding: 2rem 1.25rem;
+        }
+      }
     }
   }
 }

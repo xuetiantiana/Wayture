@@ -1,6 +1,6 @@
 <template>
   <header class="header-bar">
-    <div class="brand" @click="goHome">Microsoft Research</div>
+    <div class="brand" :class="{ 'brand-main': isMainPage }" @click="goHome">Microsoft Research</div>
     <div class="header-actions">
       <template v-if="isAuthenticated">
         <div class="profile-menu" aria-label="用户菜单">
@@ -26,17 +26,19 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuth } from '../composables/useAuth';
 
 const auth = useAuth();
 const router = useRouter();
+const route = useRoute();
 
 onMounted(async () => {
   await auth.initAuth();
 });
 
 const isAuthenticated = computed(() => auth.isAuthenticated.value);
+const isMainPage = computed(() => route.path === '/main');
 const account = computed(() => auth.account.value);
 const displayName = computed(() => account.value?.name?.trim() || '游客');
 const userPrincipalName = computed(() => account.value?.username || 'unknown@user');
@@ -83,6 +85,10 @@ function openSettings() {
     font-weight: 700;
     cursor: pointer;
     z-index: 9;
+
+    &.brand-main {
+      color: #fff;
+    }
   }
 
   .header-actions {

@@ -7,8 +7,8 @@
       <!-- <img class="hero-logo" src="../assets/images/chimu.png" alt="CHIMU WONDERLAND" /> -->
       <p class="hero-caption">欢迎来到尺木神奇世界</p>
       <div class="hero-actions">
-        <button class="hero-button button-glass" @click="explore">Start exploring</button>
-        <button class="hero-button button-glass" @click="memories">Create memories.</button>
+        <button class="hero-button button-glass" @click="explore">开始探索</button>
+        <button class="hero-button button-glass" @click="memories">创建回忆</button>
       </div>
     </div>
   </section>
@@ -121,7 +121,6 @@ function memories() {
         min-width: 11.125rem;
         border: 0.0625rem solid rgba(53, 60, 52, 0.25);
         color: #425042;
-        font-weight: 600;
         padding: 0.875rem 1.625rem;
         border-radius: 999rem;
         transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;

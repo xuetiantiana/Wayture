@@ -2,7 +2,7 @@
   <section class="memories-page" aria-label="回忆页面">
     <section class="memory-hero">
       <button class="back-button" type="button" @click="router.push('/')">
-        &lsaquo;
+        <el-icon><ArrowLeftBold /></el-icon>
       </button>
 
       <div class="hero-content">
@@ -28,22 +28,22 @@
           >
             手账
           </button>
-          <button
+          <!-- <button
             type="button"
             :class="{ active: selectedMemoryType === 'album' }"
             @click="selectedMemoryType = 'album'"
           >
             相册
-          </button>
+          </button> -->
         </div>
         <nav class="workspace-links" aria-label="回忆导航">
           <button type="button" @click="openGallery('journal')">
             查看手账
           </button>
           <span></span>
-          <button type="button" @click="openGallery('album')">
+          <!-- <button type="button" @click="openGallery('album')">
             查看相册
-          </button>
+          </button> -->
         </nav>
       </header>
 
@@ -102,7 +102,7 @@
         </div>
 
         <div class="workspace-footer">
-          <p>最多可上传8张</p>
+          <p>最多可以选中8张</p>
           <div class="action-buttons">
             <button
               v-if="selectedMemoryType === 'journal'"
@@ -140,9 +140,10 @@
 <script setup lang="ts">
 import { computed, ref, reactive, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { ArrowLeftBold } from "@element-plus/icons-vue";
 import { useTourStore } from "../composables/useTourStore";
-import journalExampleImage from "../assets/images/example-1.png";
-import albumExampleImage from "../assets/images/example-2.png";
+import journalExampleImage from "../assets/images/example-2.png";
+import albumExampleImage from "../assets/images/example-1.png";
 
 const router = useRouter();
 const tour = useTourStore();
@@ -320,8 +321,8 @@ onMounted(() => {
       left: 3.375rem;
       display: grid;
       place-items: center;
-      width: 2rem;
-      height: 2rem;
+      width: 2.5rem;
+      height: 2.5rem;
       border: 0.0625rem solid rgba(255, 255, 255, 0.22);
       border-radius: 0.5rem;
       background: rgba(74, 86, 45, 0.32);

@@ -113,6 +113,9 @@ export interface GallerySession {
   images: GalleryImage[];
   source_photo_count: number;
   generated_image_count: number;
+  status?: string;
+  task_id?: string;
+  error?: string;
 }
 
 const selectedPoints = computed(() =>
