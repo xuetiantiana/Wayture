@@ -28,8 +28,10 @@
 import { computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuth } from '../composables/useAuth';
+import { useTourStore } from '../composables/useTourStore';
 
 const auth = useAuth();
+const tour = useTourStore();
 const router = useRouter();
 const route = useRoute();
 
@@ -38,7 +40,7 @@ onMounted(async () => {
 });
 
 const isAuthenticated = computed(() => auth.isAuthenticated.value);
-const isMainPage = computed(() => route.path === '/main');
+const isMainPage = computed(() => route.path === '/main' && tour.activeTab.value === 'map');
 const account = computed(() => auth.account.value);
 const displayName = computed(() => account.value?.name?.trim() || '游客');
 const userPrincipalName = computed(() => account.value?.username || 'unknown@user');
