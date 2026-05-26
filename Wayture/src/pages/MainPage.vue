@@ -78,37 +78,45 @@
       <button class="route-map-entry" type="button" @click="goTourDetails">
         <span class="route-map-title">路线地图</span>
         <span class="route-map-count">{{ allTourList.length }}</span>
-        <el-icon class="route-map-icon"><ArrowRight /></el-icon>
+        <el-icon class="route-map-icon"><ArrowRightBold /></el-icon>
       </button>
-      <div class="selected-popup-header">
-        <div>
-          <p class="popup-title">当前游览列表</p>
-          <p class="popup-subtitle">已选 {{ selectedPoints.length }} 项</p>
+      <div class="selected-list-panel">
+        <div class="selected-popup-header">
+          <div>
+            <p class="popup-title">当前游览列表</p>
+            <p class="popup-subtitle">已选 {{ selectedPoints.length }} 项</p>
+          </div>
+          <span class="toggle-icon" @click="toggleSelectedPopup">
+            {{ selectedPopupOpen ? '收起' : '展开' }}
+          </span>
         </div>
-        <span class="toggle-icon" @click="toggleSelectedPopup">
-          {{ selectedPopupOpen ? '收起' : '展开' }}
-        </span>
+        <template v-if="selectedPopupOpen">
+          <div v-if="selectedPoints.length === 0" class="popup-empty">点击地图上的点位开始规划</div>
+          <ul v-else class="selected-list">
+            <li v-for="(point, index) in selectedPoints" :key="point.id" class="selected-item">
+              <span class="item-index" :style="{ backgroundColor: getFieldColor(point.field) }">{{ index + 1 }}</span>
+              <span class="item-name">{{ point.name }}</span>
+              <span class="delete-icon" aria-label="删除景点" @click="removePoint(point.id)">
+                <el-icon><CloseBold /></el-icon>
+              </span>
+            </li>
+          </ul>
+          <div class="popup-footer">
+            <button class="button-clear" type="button" :disabled="selectedPoints.length === 0 || routeLoading" @click="clearSelectedPoints">
+              清空
+            </button>
+            <el-button
+              class="button-generate"
+              :loading="routeLoading"
+              :disabled="selectedPoints.length === 0 || routeLoading"
+              type="primary"
+              @click="generateTour"
+            >
+              生成地图
+            </el-button>
+          </div>
+        </template>
       </div>
-      <template v-if="selectedPopupOpen">
-        <div v-if="selectedPoints.length === 0" class="popup-empty">点击地图上的点位开始规划</div>
-        <ul v-else class="selected-list">
-          <li v-for="(point, index) in selectedPoints" :key="point.id" class="selected-item">
-            <span class="item-index" :style="{ backgroundColor: getFieldColor(point.field) }">{{ index + 1 }}</span>
-            <span class="item-name">{{ point.name }}</span>
-            <span class="delete-icon" aria-label="删除景点" @click="removePoint(point.id)">
-              <el-icon><CloseBold /></el-icon>
-            </span>
-          </li>
-        </ul>
-        <div class="popup-footer">
-          <button class="button-clear" type="button" :disabled="selectedPoints.length === 0 || routeLoading" @click="clearSelectedPoints">
-            一键清空
-          </button>
-          <button class="button-generate" :disabled="selectedPoints.length === 0 || routeLoading" @click="generateTour">
-          {{ routeLoading ? '地图生成中...' : '生成地图 ' }}
-        </button>
-        </div>
-      </template>
     </div>
   </section>
 </template>
@@ -116,7 +124,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { ArrowRight, CloseBold } from '@element-plus/icons-vue';
+import { ArrowRightBold, CloseBold } from '@element-plus/icons-vue';
 import AttractionListView from '../components/AttractionListView.vue';
 import AttractionDetailModal from '../components/AttractionDetailModal.vue';
 import { useTourStore } from '../composables/useTourStore';
@@ -562,14 +570,13 @@ onMounted(async () => {
   position: fixed;
   right: 1.625rem;
   bottom: 0.625rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   width: min(19rem, calc(100% - 2rem));
   max-width: 22.5rem;
-  background: rgba(0,0,0,0.42);
-  border: 0.0625rem solid rgba(96, 165, 250, 0.35);
-  border-radius: 15px;
-  backdrop-filter: blur(1.25rem);
   z-index: 40;
-  overflow: hidden;
+  overflow: visible;
 
   &.collapsed {
     width: min(13.75rem, calc(100% - 2rem));
@@ -583,13 +590,14 @@ onMounted(async () => {
     width: 100%;
     min-height: 3.25rem;
     padding: 0 1.125rem;
-    border: 0;
-    border-radius: 1rem;
-    background: rgba(31, 31, 31, 0.86);
+    border: none;
+    border-radius: 15px;
+    background: rgba(0, 0, 0, 0.42);
     color: #fff;
     cursor: pointer;
     text-align: left;
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(1.25rem);
 
     .route-map-title {
       font-size: 1rem;
@@ -599,14 +607,20 @@ onMounted(async () => {
     .route-map-count {
       min-width: 1rem;
       color: rgba(255, 255, 255, 0.78);
-      font-weight: 700;
       text-align: center;
     }
 
     .route-map-icon {
       color: #fff;
-      font-size: 1.5rem;
+      font-size: 1rem;
     }
+  }
+
+  .selected-list-panel {
+    overflow: hidden;
+    border-radius: 15px;
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(1.25rem);
   }
 
   .selected-popup-header {
@@ -621,6 +635,7 @@ onMounted(async () => {
       padding: .5em 1em;
       border-radius: 1em;
       color: #e2e8f0;
+      font-size: .75em;
     }
    
 
@@ -634,13 +649,13 @@ onMounted(async () => {
     .popup-subtitle {
       margin: 0.25rem 0 0;
       font-size: 0.82rem;
-      color: #94a3b8;
+      color: #e2e8f0;
     }
   }
 
   .popup-empty {
     padding: 0.5rem 1rem;
-    color: #94a3b8;
+    color: #e2e8f0;
   }
 
   .selected-list {
@@ -691,8 +706,9 @@ onMounted(async () => {
     justify-content: flex-end;
     gap: 0.75rem;
     margin-top: auto;
-    padding: 0.5rem 1.125rem;
-    button{
+    padding: 1.5rem 1.125rem 1rem;
+    button,
+    .el-button {
       border-radius: 8px;
       height: 2.5rem;
       border: none;

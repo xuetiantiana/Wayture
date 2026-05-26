@@ -6,7 +6,7 @@
           <button class="details-back-button" type="button" aria-label="返回" @click="editMap">
             <el-icon><ArrowLeftBold /></el-icon>
           </button>
-          <h2 class="section-title">游览详情</h2>
+          <h2 class="section-title">地图列表</h2>
           <button class="tour-map-button" type="button" aria-label="游览地图" @click="isTourListOpen = true">
             <img :src="listIcon" alt="" />
           </button>
@@ -94,15 +94,25 @@
         <strong>{{ activeTourTitle }}</strong>
         <div class="map-actions">
           <template v-if="postcardImageUrl && !isPostcardPending">
-            <span
-              class="map-action map-action-download"
-              :class="{ disabled: imageDownloading }"
+            <el-button class="create-memories-button" @click="createMemories">
+              创建回忆
+            </el-button>
+            <el-button
+              :loading="imageDownloading"
+              :disabled="imageDownloading"
+              type="primary"
               @click="downloadImage"
-              >☼ {{ imageDownloading ? "下载中" : "下载图片" }}</span
             >
+              <template #icon>
+                <Download />
+              </template>
+              <span>下载图片</span>
+            </el-button>
           </template>
           <template v-else-if="isPostcardPending">
-            <span class="map-action map-action-confirm disabled">☼ 明信片生成中</span>
+            <el-button type="primary" :loading="true" disabled>
+              明信片生成中
+            </el-button>
           </template>
           <template v-else>
             <span
@@ -123,9 +133,8 @@
         <div
           ref="downloadContainer"
           :style="{
-            width: '645px',
+            width: '600px',
             margin: '0 auto',
-            maxWidth: '100%',
           }"
           class="dowmload-container"
         >
@@ -147,8 +156,11 @@
               @mouseenter="setHoverPoint(point.id)"
               @mouseleave="clearHoverPoint"
             >
-              <span v-if="routePlanned && isRoutePoint(point.id)">
+              <span v-if="routePlanned && isRoutePoint(point.id)" class="map-point-order">
                 {{ getRouteOrder(point.id) }}
+              </span>
+              <span v-if="routePlanned && isRoutePoint(point.id)" class="map-point-name">
+                {{ point.name }}
               </span>
             </div>
           </div>
@@ -172,7 +184,25 @@
               width="100%"
             />
           </div>
+          <el-button
+            v-if="postcardImageUrl && !isPostcardPending"
+            class="download-container-button"
+            :loading="imageDownloading"
+            :disabled="imageDownloading"
+            type="primary"
+            data-html2canvas-ignore="true"
+            @click="downloadImage"
+          >
+            <template #icon>
+              <Download />
+            </template>
+            <span>Download</span>
+          </el-button>
+          
         </div>
+        <p style="margin-top: 1rem; font-size: 0.875rem; color: #555;text-align: center;padding:0 2rem 2rem;">
+            可下载保存到手机随时查看；如果之后有打印计划，推荐使用 A3 尺寸，画面整体观感会更舒适一些。
+          </p>
       </div>
     </section>
 
@@ -183,7 +213,7 @@
 import html2canvas from "html2canvas";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { ArrowLeftBold } from "@element-plus/icons-vue";
+import { ArrowLeftBold, Download } from "@element-plus/icons-vue";
 import { useTourStore } from "../composables/useTourStore";
 import icon1 from "../assets/images/icon1.png";
 import icon2 from "../assets/images/icon2.png";
@@ -310,6 +340,10 @@ function editMap() {
   
 
   router.push("/main");
+}
+
+function createMemories() {
+  router.push("/memories");
 }
 
 function normalizeImageUrl(url: string): string {
@@ -733,13 +767,14 @@ onBeforeUnmount(() => {
     }
   }
 
+ 
   .tour-list-layer {
     position: absolute;
     top: 0;
     bottom: 0;
     left: 100%;
     z-index: 30;
-    width: min(34rem, calc(100vw - 100% - 1.5rem));
+    width: min(20rem, calc(100vw - 100% - 1.5rem));
     min-width: 24rem;
     background: transparent;
   }
@@ -749,8 +784,9 @@ onBeforeUnmount(() => {
     flex-direction: column;
     width: 100%;
     height: 100%;
-    background: #f5f5f5;
+    background: #fff;
     box-shadow: 0.25rem 0 1rem rgba(15, 23, 42, 0.08);
+    border-radius: 16px;
 
     .tour-list-header {
       display: flex;
@@ -761,6 +797,7 @@ onBeforeUnmount(() => {
       padding: 0 2rem;
       border-bottom: 0.0625rem solid #e2e2e2;
       background: #fff;
+      display: none;
 
       strong {
         min-width: 0;
@@ -821,7 +858,7 @@ onBeforeUnmount(() => {
     flex: 1;
     flex-direction: column;
     min-width: 0;
-    background-color: rgba(198, 185, 153, 1);
+    background-color: #f5f5f5;
     overflow: hidden;
 
     .map-toolbar {
@@ -830,7 +867,7 @@ onBeforeUnmount(() => {
       justify-content: space-between;
       gap: 1rem;
       padding: 0.875rem 1.125rem;
-      background: #f7f7f7;
+      background: #fff;
 
       strong {
         color: #111827;
@@ -841,6 +878,12 @@ onBeforeUnmount(() => {
         display: flex;
         align-items: center;
         gap: 0.625rem;
+
+        .create-memories-button {
+          border: 1px solid ;
+          background: #2f2f2f !important;
+          color: #fff !important;
+        }
 
         .map-action {
           display: inline-flex;
@@ -866,12 +909,6 @@ onBeforeUnmount(() => {
             box-shadow: 0 0.125rem 0.5rem rgba(161, 111, 0, 0.22);
           }
 
-          &.map-action-download {
-            background: rgb(255, 183, 0);
-            color: #fff;
-            box-shadow: 0 0.125rem 0.5rem rgba(161, 111, 0, 0.22);
-          }
-
           &.disabled {
             opacity: 0.55;
             cursor: not-allowed;
@@ -890,7 +927,18 @@ onBeforeUnmount(() => {
     }
 
     .dowmload-container {
+      position: relative;
       min-width: 0;
+
+      .download-container-button {
+        position: absolute;
+        right: 1rem;
+        bottom: 1rem;
+        z-index: 5;
+        background: rgba(0, 0, 0, 0.62) !important;
+        height: 2.25rem !important;
+        color: #fff !important;
+      }
     }
 
     .map-frame {
@@ -921,14 +969,33 @@ onBeforeUnmount(() => {
         line-height: 1;
         cursor: pointer;
         transform: translate(-50%, -50%);
-        transition: box-shadow 0.18s ease, transform 0.18s ease;
+        transition: box-shadow 0.18s ease, width 0.18s ease, height 0.18s ease;
 
-        span {
+        .map-point-order {
           display: grid;
           place-items: center;
           width: 100%;
           height: 100%;
           line-height: 1;
+        }
+
+        .map-point-name {
+          position: absolute;
+          left: 50%;
+          bottom: calc(100% + 0.2rem);
+          max-width: 8rem;
+          padding: 0.25rem 0.5rem;
+          border-radius: 0.375rem;
+          background: rgba(31, 31, 31, 0.72);
+          color: #fff;
+          font-size: 0.75rem;
+          font-weight: 500;
+          line-height: 1.2;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          transform: translateX(-50%);
+          white-space: nowrap;
+          pointer-events: none;
         }
 
         &.selected {
@@ -939,8 +1006,15 @@ onBeforeUnmount(() => {
         }
 
         &.active {
+          width: 1.2rem;
+          height: 1.2rem;
+          box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.24);
+        }
+
+        &.selected.active {
+          width: 2.1rem;
+          height: 2.1rem;
           box-shadow: 0 0 0 0.375rem rgba(255, 255, 255, 0.28);
-          transform: translate(-50%, -50%) scale(1.2);
         }
       }
 
@@ -948,7 +1022,7 @@ onBeforeUnmount(() => {
 
     .postcard-preview {
       position: relative;
-      aspect-ratio: 645 / 465;
+      aspect-ratio: 600 / 424;
       background: #fff;
       display: flex;
       flex-direction: column;
@@ -1097,10 +1171,6 @@ onBeforeUnmount(() => {
 
       .map-scroll-area {
         padding: 1rem 0;
-      }
-
-      .dowmload-container {
-        width: 100% !important;
       }
 
       .postcard-preview {

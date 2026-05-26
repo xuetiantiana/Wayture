@@ -236,8 +236,8 @@ function handleAdd(id: number) {
   position: absolute;
   right: 12px;
   top: 12px;
-  width: 32px;
-  height: 32px;
+  width: 2rem;
+  height: 2rem;
   border: 2px solid rgba(255, 255, 255, 0.95);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.16);
@@ -262,7 +262,7 @@ function handleAdd(id: number) {
   max-width: calc(100% - 20px);
   color: #fff;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 500;
   line-height: 1.3;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
 }
@@ -277,7 +277,6 @@ function handleAdd(id: number) {
   background: rgba(15, 23, 42, 0.62);
   color: #fff;
   font-size: 11px;
-  font-weight: 700;
   cursor: pointer;
 }
 

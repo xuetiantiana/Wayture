@@ -1,7 +1,7 @@
 <template>
   <section class="memories-page" aria-label="回忆页面">
     <section class="memory-hero">
-      <button class="back-button" type="button" @click="router.push('/')">
+      <button class="back-button" type="button" @click="router.back();">
         <el-icon><ArrowLeftBold /></el-icon>
       </button>
 
@@ -21,13 +21,14 @@
     <section class="memory-workspace">
       <header class="workspace-header">
         <div class="memory-type-switch" aria-label="选择生成类型">
-          <button
+          <span style="font-size: 1.25em">手账</span>
+          <!-- <button
             type="button"
             :class="{ active: selectedMemoryType === 'journal' }"
             @click="selectedMemoryType = 'journal'"
           >
             手账
-          </button>
+          </button> -->
           <!-- <button
             type="button"
             :class="{ active: selectedMemoryType === 'album' }"
@@ -37,10 +38,10 @@
           </button> -->
         </div>
         <nav class="workspace-links" aria-label="回忆导航">
-          <button type="button" @click="openGallery('journal')">
+          <el-button  @click="openGallery('journal')">
             查看手账
-          </button>
-          <span></span>
+          </el-button>
+          <!-- <span></span> -->
           <!-- <button type="button" @click="openGallery('album')">
             查看相册
           </button> -->
@@ -104,14 +105,15 @@
         <div class="workspace-footer">
           <p>最多可以选中8张</p>
           <div class="action-buttons">
-            <button
+            <el-button
               v-if="selectedMemoryType === 'journal'"
-              class="button-primary"
+              type="primary"
+              :loading="isGenerating"
               :disabled="selectedIndices.size === 0 || isGenerating"
               @click="generateJournal"
             >
-              {{ isGenerating ? "生成中..." : "生成记忆手账" }}
-            </button>
+              生成记忆手账
+            </el-button>
             <button
               v-else
               class="button-primary"
@@ -395,11 +397,11 @@ onMounted(() => {
         align-items: center;
         gap: 0.625rem;
 
-        button {
-          border: 0;
-          background: transparent;
-          color: #666;
-          cursor: pointer;
+        .el-button {
+          background: rgba(245, 245, 245, 1) !important;
+          color: rgba(243, 176, 7, 1) !important;
+          height: 2.3rem !important;
+          font-size: 1rem !important;
         }
 
         span {
@@ -570,21 +572,10 @@ onMounted(() => {
         display: flex;
         gap: 0.75rem;
 
-        .button-primary {
-          min-height: 2.125rem;
-          padding: 0 1.125rem;
-          border: 0;
-          border-radius: 0.375rem;
-          background: #ffc22f;
-          color: #6b4d00;
-          font-weight: 600;
-          cursor: pointer;
-
-          &:disabled {
-            opacity: 0.48;
-            cursor: not-allowed;
-            filter: grayscale(0.25);
-          }
+        .el-button{
+          height: 3.25rem !important;
+          padding: 0 1.75rem !important;
+          font-size: 1rem !important;
         }
       }
     }

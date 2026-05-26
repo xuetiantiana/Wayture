@@ -1,13 +1,13 @@
 <template>
   <section class="gallery-page">
     <aside class="session-sidebar">
-      <button class="back-button" type="button" @click="router.push('/memories')">
-        <el-icon><ArrowLeftBold /></el-icon>
-      </button>
-
-      <div class="album-label">
-        <el-icon class="album-icon"><Clock /></el-icon>
-        <span>{{ galleryLabel }}</span>
+      <div class="sidebar-header">
+        <button class="back-button" type="button" @click="router.back();">
+          <el-icon><ArrowLeftBold /></el-icon>
+        </button>
+        <div class="album-label">
+          <span>{{ galleryLabel }}</span>
+        </div>
       </div>
 
       <div v-if="isLoadingSessions" class="loading-section">
@@ -79,7 +79,8 @@
                 type="button"
                 @click.stop="downloadGalleryImage(img)"
               >
-                {{ downloadingImageKey === `${activeSession.id}-${img.index}` ? 'Downloading' : 'Download' }}
+                <el-icon><Download /></el-icon>
+                <span>{{ downloadingImageKey === `${activeSession.id}-${img.index}` ? 'Downloading' : 'Download' }}</span>
               </button>
             </div>
             <p v-if="img.description" class="gallery-desc">{{ img.description }}</p>
@@ -109,7 +110,7 @@
 import { ref, computed, onBeforeUnmount, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElImageViewer } from 'element-plus';
-import { ArrowLeftBold, Clock } from '@element-plus/icons-vue';
+import { ArrowLeftBold, Download } from '@element-plus/icons-vue';
 import { useTourStore, type GallerySession } from '../composables/useTourStore';
 import icon1 from '../assets/images/icon1.png';
 import icon2 from '../assets/images/icon2.png';
@@ -316,19 +317,27 @@ onBeforeUnmount(() => {
   color: #222;
 
   .session-sidebar {
+    display: flex;
+    flex-direction: column;
     box-sizing: border-box;
     height: 100%;
     min-height: 0;
-    overflow-y: auto;
+    overflow: hidden;
     padding: 1.4rem 1.2rem;
     background: #f4f4f4;
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+      margin-bottom: 2rem;
+    }
 
     .back-button {
       display: grid;
       place-items: center;
       width: 2.5rem;
       height: 2.5rem;
-      margin-bottom: 2rem;
       border: 0;
       border-radius: 0.5625rem;
       background: #e9e9e9;
@@ -341,21 +350,19 @@ onBeforeUnmount(() => {
       display: flex;
       align-items: center;
       gap: 0.625rem;
-      margin-bottom: 1.25rem;
       padding: 0 0.125rem;
       color: #2f2f2f;
       font-weight: 700;
       font-size: 1.125rem;
-
-      .album-icon {
-        color: #777;
-      }
     }
 
     .session-list {
       display: flex;
+      flex: 1;
       flex-direction: column;
       gap: .5rem;
+      min-height: 0;
+      overflow-y: auto;
 
       .session-item {
         display: flex;
@@ -399,7 +406,7 @@ onBeforeUnmount(() => {
     min-width: 0;
     height: 100%;
     min-height: 0;
-    overflow-y: auto;
+    overflow: hidden;
     padding: 2rem 1.75rem;
 
     .gallery-header {
@@ -438,28 +445,29 @@ onBeforeUnmount(() => {
     }
 
     .gallery-strip {
-      display: flex;
-      align-items: flex-start;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      align-content: flex-start;
       gap: 1.25rem;
       flex: 1;
       min-height: 0;
-      overflow-x: auto;
+      overflow: auto;
       padding-bottom: 0.625rem;
 
       &.single-journal-image {
-        align-items: center;
+        grid-template-columns: minmax(0, 40rem);
+        align-content: center;
         justify-content: center;
-        overflow-x: visible;
+        overflow-y: auto;
 
         .gallery-item {
-          flex: 0 1 46.875rem;
-          width: min(100%, 46.875rem);
-          max-width: 46.875rem;
+          width: min(100%, 40rem);
+          max-width: 40rem;
+          margin-block: auto;
         }
       }
 
       .gallery-item {
-        flex: 0 0 19.0625rem;
         overflow: hidden;
         border: 0;
         border-radius: 0;
@@ -481,7 +489,7 @@ onBeforeUnmount(() => {
           display: block;
           width: 100%;
           height: auto;
-          min-height: 30rem;
+          min-height: 25rem;
           background: #f3f3f3;
           object-fit: contain;
         }
@@ -490,6 +498,9 @@ onBeforeUnmount(() => {
           position: absolute;
           right: 1rem;
           bottom: 1rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.375rem;
           padding: 0.3em 1.25rem;
           border: 0;
           border-radius: 0.625rem;
@@ -630,6 +641,10 @@ onBeforeUnmount(() => {
       height: auto;
       min-height: 0;
       overflow-y: visible;
+
+      .gallery-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
   }
 }
@@ -645,22 +660,21 @@ onBeforeUnmount(() => {
       }
 
       .gallery-strip {
-        flex-direction: column;
+        grid-template-columns: 1fr;
         gap: 1.125rem;
-        overflow-x: visible;
+        overflow: visible;
 
         &.single-journal-image {
-          align-items: center;
-          justify-content: center;
+          grid-template-columns: minmax(0, 1fr);
+          justify-content: stretch;
 
           .gallery-item {
-            width: min(100%, 46.875rem);
-            max-width: 46.875rem;
+            width: 100%;
+            max-width: 45rem;
           }
         }
 
         .gallery-item {
-          flex: none;
           width: 100%;
 
           .gallery-image {
