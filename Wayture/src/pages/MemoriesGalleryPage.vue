@@ -310,8 +310,7 @@ onBeforeUnmount(() => {
   z-index: 555;
   display: grid;
   grid-template-columns: 20rem 1fr;
-  height: 100vh;
-  min-height: 0;
+  height: 100%;
   overflow: hidden;
   background: #fff;
   color: #222;
@@ -628,7 +627,7 @@ onBeforeUnmount(() => {
   .gallery-page {
     grid-template-columns: 1fr;
     height: auto;
-    min-height: 100vh;
+    min-height: 100%;
     overflow: auto;
 
     .session-sidebar {

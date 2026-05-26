@@ -1,5 +1,5 @@
 <template>
-  <section class="flex-col" aria-label="主页面">
+  <section class="flex-col" aria-label="主页面" style="height: 100%;">
     <div class="panel-card" style="position: relative;">
       <div class="main-tabbar">
         <div class="tab-group">
@@ -16,7 +16,7 @@
               <span v-if="item.count > 0" class="field-legend-count">{{ item.count }}</span>
             </div>
           </div>
-          <div style="overflow: auto;height: 100%;">
+          <div class="map-viewport">
             <div class="map-image">
             <img class="map-img" :src="tour.mapImageUrl" alt="游览地图" />
             <button
@@ -307,7 +307,7 @@ onMounted(async () => {
 }
 
 .panel-card{
-  height: 100vh;
+  height: 100%;
   .map-card, .list-view-host {
     height: 100%;
     overflow: hidden;
@@ -358,6 +358,12 @@ onMounted(async () => {
     position: relative;
     height: 100%;
     border-radius: 1.625rem;
+
+    .map-viewport {
+      height: 100%;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+    }
 
     .field-legend {
       position: absolute;
@@ -723,6 +729,7 @@ onMounted(async () => {
     background: rgba(255, 255, 255, 0.18);
     color: #fff;
     cursor: pointer;
+    height:3em!important;
 
     &:disabled {
       cursor: not-allowed;
@@ -828,5 +835,52 @@ button {
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
+}
+
+@media (max-width: 980px) {
+  .map-card {
+    .map-container {
+      .map-viewport {
+        height: 100%;
+        overflow: auto;
+      }
+
+      .map-image {
+        width: max(100%, 56rem);
+        min-width: 56rem;
+      }
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .main-tabbar {
+    top: 0.75rem;
+  }
+
+  .map-card {
+    .map-container {
+      .field-legend {
+        top: 4rem;
+        left: 0.75rem;
+        max-width: calc(100% - 1.5rem);
+      }
+
+      .map-image {
+        width: 62rem;
+        min-width: 62rem;
+      }
+    }
+  }
+
+  .selected-popup {
+    right: 0.75rem;
+    bottom: 0.75rem;
+    width: min(18rem, calc(100% - 1.5rem));
+  }
+
+  .tour-list-case {
+    right: 0.75rem;
+  }
 }
 </style>

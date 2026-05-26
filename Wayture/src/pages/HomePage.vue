@@ -46,7 +46,7 @@ function memories() {
 <style scoped lang="scss">
 .hero-card {
   position: relative;
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
   display: grid;
   place-items: center;
@@ -84,7 +84,7 @@ function memories() {
     text-align: center;
     max-width: min(52.5rem, 40%);
     color: #14100d;
-    margin-top: clamp(1.75rem, 8vh, 6rem);
+    margin-top: 4rem;
 
     .hero-kicker {
       margin: 0;
@@ -92,7 +92,6 @@ function memories() {
       font-weight: 400;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      font-size: clamp(1.2rem, 2vw, 2rem);
       text-shadow: 0 0.125rem 0.75rem rgba(255, 243, 199, 0.26);
     }
 
@@ -107,7 +106,7 @@ function memories() {
     .hero-caption {
       margin: 0 0 2em;
       color: #0f0e0a;
-      font-size: clamp(1.9rem, 2.3vw, 3rem);
+      font-size: 2rem;
       font-weight: 400;
     }
 
@@ -144,21 +143,17 @@ function memories() {
 
 @media (max-width: 960px) {
   .hero-card {
-    min-height: calc(100vh - 4.5rem);
+    min-height: calc(100% - 4.5rem);
     padding: 2.375rem 1.5rem;
 
     .hero-content {
-      max-width: min(40rem, calc(100vw - 2rem));
+      max-width: 80%;
       margin-top: 1rem;
 
       .hero-caption {
-        font-size: clamp(1.5rem, 5.8vw, 2.1rem);
         margin-bottom: 1.5rem;
       }
 
-      .hero-logo {
-        width: min(35rem, calc(100vw - 2rem));
-      }
 
       .hero-actions {
         .hero-button {
