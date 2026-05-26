@@ -327,6 +327,8 @@ onBeforeUnmount(() => {
     padding: 1.4rem 0 1.4rem 1.2rem;
     padding-right: 0rem !important;
     background: #fff;
+    box-shadow: -1px 0px 0px 0px rgba(245, 245, 245, 1) inset;
+
 
     .sidebar-header {
       display: flex;
@@ -367,7 +369,9 @@ onBeforeUnmount(() => {
       overflow-y: auto;
 
       .session-item {
-        
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
         width: calc(100% - 1.5rem);
         padding: 0.625rem 0.75rem;
         border-radius: 0.5rem;
@@ -375,6 +379,7 @@ onBeforeUnmount(() => {
 
         strong {
           font-weight: 500;
+          color: #000
         }
         line-height: 1.6;
 
@@ -387,7 +392,7 @@ onBeforeUnmount(() => {
         }
 
         .session-meta {
-          color: #666;
+          color: rgba(9, 9, 9, 1);
           font-size: 0.875rem;
         }
       }

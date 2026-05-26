@@ -39,10 +39,10 @@
       <div v-if="isTourListPage" class="tour-content-toolbar">
         <strong>{{ activeTourTitle }}</strong>
         <div class="map-actions">
-          <template v-if="postcardImageUrl && !isPostcardPending">
-            <el-button class="create-memories-button" @click="createMemories">
+          <el-button class="create-memories-button" @click="createMemories">
               创建回忆
             </el-button>
+          <template v-if="postcardImageUrl && !isPostcardPending">
             <el-button
               :loading="imageDownloading"
               :disabled="imageDownloading"
@@ -61,9 +61,6 @@
             </el-button>
           </template>
           <template v-else>
-            <span class="map-action map-action-edit" @click="editMap"
-              >✎ 编辑地图</span
-            >
             <span
               class="map-action map-action-confirm"
               :class="{ disabled: !canGeneratePostcard }"
@@ -85,7 +82,7 @@
             >
               <el-icon><ArrowLeftBold /></el-icon>
             </button>
-            <h2 class="section-title">地图路线</h2>
+            <h2 class="section-title">{{ activeTourTitle }}</h2>
             <button
               v-if="!isTourListPage"
               class="tour-map-button"
@@ -801,6 +798,8 @@ onBeforeUnmount(() => {
     padding: 1.4rem 0 1.4rem 1.2em;
     background: #fff;
     border-bottom: 1px solid #eee;
+    box-shadow: 0px -1px 0px 0px rgba(0, 0, 0, 0.25);
+
 
     .sidebar-header {
       display: flex;
@@ -841,8 +840,9 @@ onBeforeUnmount(() => {
       overflow-y: auto;
 
       .tour-record-item {
-        box-sizing: border-box;
-        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
         width: calc(100% - 1.5rem);
         padding: 0.625rem 0.75rem;
         border-radius: 0.5rem;
@@ -929,8 +929,8 @@ onBeforeUnmount(() => {
       height: 2.5rem;
       border: 0;
       border-radius: 0.625rem;
-      background: #2f2f2f;
-      color: #fff;
+      background: #e9e9e9;
+      color: #1f2933;
       font-size: 1.2rem;
       line-height: 1;
       cursor: pointer;
