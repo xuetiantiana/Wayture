@@ -37,7 +37,7 @@
       
 
       <button class="cta-button" type="button" :disabled="isAdded" @click="$emit('add', point.id)">
-        {{ isAdded ? '已加入路线' : '加入路线' }}
+        {{ isAdded ? t('attraction.added') : t('attraction.add') }}
       </button>
     </div>
     </div>
@@ -46,6 +46,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import { Pagination } from 'swiper/modules';
 import { CloseBold } from '@element-plus/icons-vue';
@@ -64,6 +65,7 @@ defineEmits<{
   add: [id: number];
 }>();
 
+const { t } = useI18n();
 const swiperModules = [Pagination];
 
 const tagBackground = computed(() => props.accentColor ?? 'rgba(140, 110, 32, 0.58)');
@@ -223,12 +225,10 @@ const detailTags = computed(() => {
       width: 100%;
       height: 2.4em;
       border: none;
-      border-radius: 14px;
-      background: linear-gradient(180deg, #ffbc1e 0%, #f5a400 100%);
-      color: #fff9eb;
-      font-size: 1.125rem;
-      font-weight: 700;
-      box-shadow: 0 12px 24px rgba(168, 104, 5, 0.3);
+      border-radius: 8px;
+      background: rgb(255, 183, 0);
+      color: #000;
+      font-size: 1.25rem;
 
       &:disabled {
         opacity: 0.72;

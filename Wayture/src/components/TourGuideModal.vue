@@ -6,16 +6,16 @@
 
         <template v-if="step === 1">
           <div class="modal-header">
-            <h3>欢迎来到FamilyFest 🎈</h3>
+            <h3>{{ t('settings.welcome') }}</h3>
           </div>
-          <p class="modal-subtitle">今天的冒险从这里开始</p>
+          <p class="modal-subtitle">{{ t('settings.subtitle') }}</p>
 
           <div class="modal-body">
             <div class="step-content">
               <input
                 v-model="nickname"
                 type="text"
-                placeholder="给你的冒险之旅取一个有趣的昵称吧！例如：小奇一家冒险之旅"
+                :placeholder="t('settings.nicknamePlaceholder')"
                 class="nickname-input"
                 @keyup.enter="nextStep"
               />
@@ -23,15 +23,15 @@
           </div>
 
           <div class="modal-footer">
-            <button class="btn-primary" :disabled="!canProceed" @click="nextStep">下一步</button>
+            <button class="btn-primary" :disabled="!canProceed" @click="nextStep">{{ t('settings.next') }}</button>
           </div>
         </template>
 
         <template v-else-if="step === 2">
           <div class="modal-header">
-            <h3>选择你的冒险风格 ✨</h3>
+            <h3>{{ t('settings.pickStyle') }}</h3>
           </div>
-          <p class="modal-subtitle">Pick the vibe for this adventure.</p>
+          <p class="modal-subtitle">{{ t('settings.pickStyleSubtitle') }}</p>
 
           <div class="modal-body">
             <div class="step-content">
@@ -50,8 +50,8 @@
           </div>
 
           <div class="modal-footer">
-            <button class="btn-secondary" @click="prevStep">上一步</button>
-            <button class="btn-primary" :disabled="!canProceed" @click="complete">Finish</button>
+            <button class="btn-secondary" @click="prevStep">{{ t('settings.prev') }}</button>
+            <button class="btn-primary" :disabled="!canProceed" @click="complete">{{ t('settings.finish') }}</button>
           </div>
         </template>
       </div>
@@ -61,6 +61,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useTourStore } from '../composables/useTourStore';
 
 interface Props {
@@ -71,6 +72,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const { t } = useI18n();
 const tour = useTourStore();
 
 const step = ref(1);
@@ -78,10 +80,10 @@ const nickname = ref('');
 const selectedStyle = ref('');
 
 const tourStyles = [
-  { value: '亲子欢乐时光', name: '亲子欢乐时光', icon: '👨‍👩‍👧', desc: '' },
-  { value: '双人甜蜜漫游', name: '双人甜蜜漫游', icon: '💕', desc: '' },
-  { value: '独享自在时光', name: '独享自在时光', icon: '🌿', desc: '' },
-  { value: '朋友欢乐同行', name: ' 朋友欢乐同行', icon: '🎉', desc: '' }
+  { value: t('settings.styleFamily'), name: t('settings.styleFamily'), icon: '👨‍👩‍👧', desc: '' },
+  { value: t('settings.styleCouple'), name: t('settings.styleCouple'), icon: '💕', desc: '' },
+  { value: t('settings.styleSolo'), name: t('settings.styleSolo'), icon: '🌿', desc: '' },
+  { value: t('settings.styleFriends'), name: t('settings.styleFriends'), icon: '🎉', desc: '' }
 ];
 
 const canProceed = computed(() => {
@@ -324,8 +326,8 @@ function closeOnOverlay() {
       .btn-primary {
         flex: 1;
         width: 100%;
-        background: #ffb300;
-        color: rgba(255, 255, 255, 0.92);
+        background: rgb(255, 183, 0);
+        color: #000;
 
         &:hover:not(:disabled) {
           background: #ffc01c;

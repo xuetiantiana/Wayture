@@ -14,7 +14,7 @@
           <el-icon><ArrowLeftBold /></el-icon>
         </button>
         <div class="album-label">
-          <span>路线地图列表</span>
+          <span>{{ t('common.back') }}</span>
         </div>
       </div>
       <div class="tour-record-list">
@@ -40,7 +40,7 @@
         <strong>{{ activeTourTitle }}</strong>
         <div class="map-actions">
           <el-button class="create-memories-button" @click="createMemories">
-              创建回忆
+              {{ t('tour.createMemories') }}
             </el-button>
           <template v-if="postcardImageUrl && !isPostcardPending">
             <el-button
@@ -52,12 +52,12 @@
               <template #icon>
                 <Download />
               </template>
-              <span>下载图片</span>
+              <span>{{ t('common.downloadImage') }}</span>
             </el-button>
           </template>
           <template v-else-if="isPostcardPending">
             <el-button type="primary" :loading="true" disabled>
-              地图生成中
+              {{ t('tour.mapPending') }}
             </el-button>
           </template>
           <template v-else>
@@ -65,7 +65,7 @@
               class="map-action map-action-confirm"
               :class="{ disabled: !canGeneratePostcard }"
               @click="generatePostcard()"
-              >☼ 生成地图</span
+              >{{ t('tour.generateMap') }}</span
             >
           </template>
         </div>
@@ -106,7 +106,7 @@
             class="retry-button"
             @click="generatePostcard()"
           >
-            重新生成地图
+            {{ t('tour.retry') }}
           </button>
         </div>
 
@@ -188,7 +188,7 @@
           <div class="map-actions">
             <template v-if="postcardImageUrl && !isPostcardPending">
               <el-button class="create-memories-button" @click="createMemories">
-                创建回忆
+                {{ t('tour.createMemories') }}
               </el-button>
               <el-button
                 :loading="imageDownloading"
@@ -199,23 +199,23 @@
                 <template #icon>
                   <Download />
                 </template>
-                <span>下载图片</span>
+                <span>{{ t('common.downloadImage') }}</span>
               </el-button>
             </template>
             <template v-else-if="isPostcardPending">
               <el-button type="primary" :loading="true" disabled>
-                地图生成中
+                {{ t('tour.mapPending') }}
               </el-button>
             </template>
             <template v-else>
               <span class="map-action map-action-edit" @click="editMap"
-                >✎ 编辑地图</span
+                >{{ t('tour.editMap') }}</span
               >
               <span
                 class="map-action map-action-confirm"
                 :class="{ disabled: !canGeneratePostcard }"
                 @click="generatePostcard()"
-                >☼ 生成地图</span
+                >{{ t('tour.generateMap') }}</span
               >
             </template>
           </div>
@@ -289,7 +289,7 @@
               <template #icon>
                 <Download />
               </template>
-              <span>下载</span>
+              <span>{{ t('common.download') }}</span>
             </el-button>
           </div>
           <p
@@ -301,8 +301,7 @@
               padding: 0 2rem 2rem;
             "
           >
-            可下载保存到手机随时查看；如果之后有打印计划，推荐使用 A3
-            尺寸，画面整体观感会更舒适一些。
+            {{ t('tour.printHint') }}
           </p>
         </div>
       </section>
@@ -313,6 +312,7 @@
 <script setup lang="ts">
 import html2canvas from "html2canvas";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowLeftBold, Download } from "@element-plus/icons-vue";
 import { useTourStore } from "../composables/useTourStore";
@@ -324,6 +324,7 @@ import { getFieldColor } from "../data/fieldConfig";
 
 const router = useRouter();
 const route = useRoute();
+const { t } = useI18n();
 const tour = useTourStore();
 const points = tour.points;
 const allTourList = tour.allTourList;

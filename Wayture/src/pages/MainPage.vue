@@ -3,8 +3,8 @@
     <div class="panel-card" style="position: relative;">
       <div class="main-tabbar">
         <div class="tab-group">
-          <button class="tab-button" :class="{ active: activeTab === 'map' }" @click="setTab('map')">地图</button>
-          <button class="tab-button" :class="{ active: activeTab === 'list' }" @click="setTab('list')">列表</button>
+          <button class="tab-button" :class="{ active: activeTab === 'map' }" @click="setTab('map')">{{ t('mainPage.tabMap') }}</button>
+          <button class="tab-button" :class="{ active: activeTab === 'list' }" @click="setTab('list')">{{ t('mainPage.tabList') }}</button>
         </div>
       </div>
       <div v-show="activeTab === 'map'" class="map-card">
@@ -69,29 +69,29 @@
         @add="addPoint"
       />
       <ul class="tour-list-case">
-        <p>主题路线</p>
+        <p>{{ t('mainPage.themeRoutes') }}</p>
         <li v-for="item in tourCases" :key="item.name" @click="applyTourCase(item.ids)">{{ item.label }}</li>
       </ul>
     </div>
 
     <div class="selected-popup" :class="{ collapsed: !selectedPopupOpen }">
       <button class="route-map-entry" type="button" @click="goTourDetails">
-        <span class="route-map-title">路线地图</span>
+        <span class="route-map-title">{{ t('mainPage.routeMap') }}</span>
         <span class="route-map-count">{{ allTourList.length }}</span>
         <el-icon class="route-map-icon"><ArrowRightBold /></el-icon>
       </button>
       <div class="selected-list-panel">
         <div class="selected-popup-header">
           <div>
-            <p class="popup-title">当前游览列表</p>
-            <p class="popup-subtitle">已选 {{ selectedPoints.length }} 项</p>
+            <p class="popup-title">{{ t('mainPage.currentTourList') }}</p>
+            <p class="popup-subtitle">{{ t('mainPage.selectedCount', { count: selectedPoints.length }) }}</p>
           </div>
           <span class="toggle-icon" @click="toggleSelectedPopup">
-            {{ selectedPopupOpen ? '收起' : '展开' }}
+            {{ selectedPopupOpen ? t('mainPage.collapse') : t('mainPage.expand') }}
           </span>
         </div>
         <template v-if="selectedPopupOpen">
-          <div v-if="selectedPoints.length === 0" class="popup-empty">点击地图上的点位开始规划</div>
+          <div v-if="selectedPoints.length === 0" class="popup-empty">{{ t('mainPage.emptyHint') }}</div>
           <ul v-else class="selected-list">
             <li v-for="(point, index) in selectedPoints" :key="point.id" class="selected-item">
               <span class="item-index" :style="{ backgroundColor: getFieldColor(point.field) }">{{ index + 1 }}</span>
@@ -103,7 +103,7 @@
           </ul>
           <div class="popup-footer">
             <button class="button-clear" type="button" :disabled="selectedPoints.length === 0 || routeLoading" @click="clearSelectedPoints">
-              清空
+              {{ t('mainPage.clear') }}
             </button>
             <el-button
               class="button-generate"
@@ -112,7 +112,7 @@
               type="primary"
               @click="generateTour"
             >
-              生成地图
+              {{ t('mainPage.generateMap') }}
             </el-button>
           </div>
         </template>
@@ -124,6 +124,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { ArrowRightBold, CloseBold } from '@element-plus/icons-vue';
 import AttractionListView from '../components/AttractionListView.vue';
 import AttractionDetailModal from '../components/AttractionDetailModal.vue';
@@ -132,6 +133,7 @@ import { calculateTriggerModalStyle } from '../utils/common.js';
 import { fieldColorMap, fixedFields, getFieldColor } from '../data/fieldConfig';
 
 const router = useRouter();
+const { t } = useI18n();
 const tour = useTourStore();
 
 const points = tour.points;
@@ -149,17 +151,17 @@ const detailModalStyle = ref<Record<string, string>>({});
 const tourCases = [
   {
     name: 'parent-kid-day',
-    label: '🧸 萌娃陪伴线',
+    label: t('mainPage.routeKid'),
     ids: [21,1,2,3,4,25,7,8,20,35,34,33,30,31,29,24,26],
   },
   {
     name: 'relax-wander',
-    label: '🌿 悠游漫享线',
+    label: t('mainPage.routeChill'),
     ids: [35,21,22,25,19,9,15],
   },
   {
     name: 'thrill-seeker',
-    label: '🎢 心跳挑战线',
+    label: t('mainPage.routeThrill'),
     ids: [11, 12, 17, 13, 16, 32],
   },
 ];
@@ -578,20 +580,20 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  width: min(19rem, calc(100% - 2rem));
-  max-width: 22.5rem;
+  width: min(20rem, calc(100% - 2rem));
+  max-width: 23rem;
   z-index: 40;
   overflow: visible;
 
   &.collapsed {
-    width: min(13.75rem, calc(100% - 2rem));
+    width: min(15rem, calc(100% - 2rem));
   }
 
   .route-map-entry {
     display: grid;
     grid-template-columns: 1fr auto auto;
     align-items: center;
-    gap: 1rem;
+    gap: .5rem;
     width: 100%;
     min-height: 3.25rem;
     padding: 0 1.125rem;

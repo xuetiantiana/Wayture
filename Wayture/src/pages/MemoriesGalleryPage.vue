@@ -6,13 +6,13 @@
           <el-icon><ArrowLeftBold /></el-icon>
         </button>
         <div class="album-label">
-          <span>{{ galleryLabel }}</span>
+          <span>{{ t('common.back') }}</span>
         </div>
       </div>
 
       <div v-if="isLoadingSessions" class="loading-section">
         <div class="spinner"></div>
-        <p>加载中...</p>
+        <p>{{ t('common.loading') }}</p>
       </div>
       <div v-else class="session-list">
         <div
@@ -27,9 +27,9 @@
             <span class="session-meta">
             {{ formatDate(session.created_at) }} ·
             {{ (session.status === 'pending' || session.status === 'processing') && session.images.length === 0
-              ? '生成中'
+              ? t('gallery.generating')
               : (session.status === 'failed' || session.status === 'error')
-                ? '生成失败'
+                ? t('gallery.failedStatus')
                 : `使用${session.source_photo_count ?? 0}张照片生成` }}
           </span>
           </p>
@@ -52,11 +52,11 @@
             <img :src="icon1" alt="" />
             <img :src="icon3" alt="" />
           </div>
-          <p>内容正在生成中，等待时间可能稍长，<br/>你可以稍后查看...</p>
+          <p>{{ t('gallery.pendingHint') }}<br/>{{ t('gallery.pendingHint2') }}</p>
         </div>
         <div v-else-if="activeSession.status === 'failed' || activeSession.status === 'error'" class="empty-state">
-          <p>生成失败，请返回重新生成。</p>
-          <button class="button-primary" @click="router.push('/memories')">返回上传页</button>
+          <p>{{ t('gallery.failed') }}</p>
+          <button class="button-primary" @click="router.push('/memories')">{{ t('gallery.backToUpload') }}</button>
         </div>
         <div
           v-else
@@ -85,7 +85,7 @@
                 <template #icon>
                   <Download />
                 </template>
-                <span>下载</span>
+                <span>{{ t('common.download') }}</span>
               </el-button>
             </div>
             <p v-if="img.description" class="gallery-desc">{{ img.description }}</p>
@@ -94,10 +94,10 @@
       </template>
       <div v-else-if="!isLoadingSessions && sessions.length === 0" class="empty-state">
         <p>{{ emptyText }}</p>
-        <button class="button-primary" @click="router.push('/memories')">去上传照片</button>
+        <button class="button-primary" @click="router.push('/memories')">{{ t('gallery.goUpload') }}</button>
       </div>
       <div v-else-if="!activeSession" class="empty-state">
-        <p>请从左侧选择一次回忆。</p>
+        <p>{{ t('gallery.pickFromLeft') }}</p>
       </div>
     </section>
 
@@ -114,6 +114,7 @@
 <script setup lang="ts">
 import { ref, computed, onBeforeUnmount, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { ElImageViewer } from 'element-plus';
 import { ArrowLeftBold, Download } from '@element-plus/icons-vue';
 import { useTourStore, type GallerySession } from '../composables/useTourStore';
@@ -130,6 +131,7 @@ type GallerySessionWithTask = GallerySession & {
 
 const router = useRouter();
 const route = useRoute();
+const { t } = useI18n();
 const tour = useTourStore();
 const isLoadingSessions = ref(false);
 const isPreviewVisible = ref(false);
@@ -142,10 +144,10 @@ const galleryType = computed<GalleryType>(() => {
   const type = String(route.query.type || '').toLowerCase();
   return type === 'journal' ? 'journal' : 'album';
 });
-const galleryLabel = computed(() => galleryType.value === 'journal' ? '回忆手账' : '回忆相册');
+const galleryLabel = computed(() => galleryType.value === 'journal' ? t('gallery.journalTitle') : t('gallery.albumTitle'));
 const emptyText = computed(() => galleryType.value === 'journal'
-  ? '暂无回忆日志，请先上传照片并生成日志。'
-  : '暂无回忆图册，请先上传照片并生成图册。');
+  ? t('gallery.emptyJournal')
+  : t('gallery.emptyAlbum'));
 const sessions = ref<GallerySessionWithTask[]>([]);
 const activeSessionId = ref<string | null>(sessions.value[0]?.id ?? null);
 const activeSession = computed<GallerySessionWithTask | undefined>(

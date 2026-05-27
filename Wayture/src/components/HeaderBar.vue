@@ -2,6 +2,9 @@
   <header class="header-bar">
     <div class="brand" :class="{ 'brand-main': isMainPage }" @click="goHome">Microsoft Research</div>
     <div class="header-actions">
+      <button style="display: none;" class="lang-button" type="button" @click="toggleLocale">
+        {{ t('lang.switchTo') }}
+      </button>
       <template v-if="isAuthenticated">
         <div class="profile-menu" aria-label="用户菜单">
           <button class="avatar-button" type="button" :title="displayName">
@@ -12,13 +15,13 @@
               <p class="profile-name">{{ displayName }}</p>
               <p class="profile-username">{{ userPrincipalName }}</p>
             </div>
-            <button class="dropdown-item" type="button" @click="openSettings">设置</button>
-            <button class="dropdown-item" type="button" @click="logout">退出</button>
+            <button class="dropdown-item" type="button" @click="openSettings">{{ t('common.settings') }}</button>
+            <button class="dropdown-item" type="button" @click="logout">{{ t('common.logout') }}</button>
           </div>
         </div>
       </template>
       <template v-else>
-        <button class="button-primary button-login" @click="login">登录</button>
+        <button class="button-primary button-login" @click="login">{{ t('common.login') }}</button>
       </template>
     </div>
   </header>
@@ -27,9 +30,12 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuth } from '../composables/useAuth';
 import { useTourStore } from '../composables/useTourStore';
+import { toggleLocale } from '../i18n';
 
+const { t } = useI18n();
 const auth = useAuth();
 const tour = useTourStore();
 const router = useRouter();
@@ -42,7 +48,7 @@ onMounted(async () => {
 const isAuthenticated = computed(() => auth.isAuthenticated.value);
 const isMainPage = computed(() => route.path === '/main' && tour.activeTab.value === 'map');
 const account = computed(() => auth.account.value);
-const displayName = computed(() => account.value?.name?.trim() || '游客');
+const displayName = computed(() => account.value?.name?.trim() || t('common.guest'));
 const userPrincipalName = computed(() => account.value?.username || 'unknown@user');
 const avatarText = computed(() => {
   const source = displayName.value;
@@ -101,6 +107,21 @@ function openSettings() {
     display: inline-flex;
     align-items: center;
     gap: 12px;
+
+    .lang-button {
+      height: 2rem;
+      padding: 0 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      color: #f8fafc;
+      font-size: 0.8125rem;
+      cursor: pointer;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.22);
+      }
+    }
 
     .profile-menu {
       position: relative;

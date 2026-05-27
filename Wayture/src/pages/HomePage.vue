@@ -5,10 +5,10 @@
     <div class="hero-content">
       <!-- <p class="hero-kicker">CHIMU</p> -->
       <!-- <img class="hero-logo" src="../assets/images/chimu.png" alt="CHIMU WONDERLAND" /> -->
-      <p class="hero-caption">欢迎来到尺木神奇世界</p>
+      <p class="hero-caption">{{ t('home.caption') }}</p>
       <div class="hero-actions">
-        <button class="hero-button button-glass" @click="explore">开始探索</button>
-        <button class="hero-button button-glass" @click="memories">创建回忆</button>
+        <button class="hero-button button-glass" @click="explore">{{ t('home.explore') }}</button>
+        <button class="hero-button button-glass" @click="memories">{{ t('home.createMemories') }}</button>
       </div>
     </div>
   </section>
@@ -17,8 +17,10 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuth } from '../composables/useAuth';
 
+const { t } = useI18n();
 const router = useRouter();
 const auth = useAuth();
 

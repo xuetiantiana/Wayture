@@ -1,14 +1,14 @@
 <template>
   <section class="memories-page" aria-label="回忆页面">
     <section class="memory-hero">
-      <button class="back-button" type="button" @click="router.back();">
+      <!-- <button class="back-button" type="button" @click="router.back();">
         <el-icon><ArrowLeftBold /></el-icon>
-      </button>
+      </button> -->
 
       <div class="hero-content">
         <h1>
-          Hi, {{ tour.userSettings.value.nickname || tour.currentUsername.value }} 幸福一家<br />
-          开始创建你的旅行回忆吧
+          {{ t('memories.heroGreeting', { name: tour.userSettings.value.nickname || tour.currentUsername.value }) }}<br />
+          {{ t('memories.heroSubtitle') }}
         </h1>
 
         <div class="passport-preview">
@@ -21,7 +21,7 @@
     <section class="memory-workspace">
       <header class="workspace-header">
         <div class="memory-type-switch" aria-label="选择生成类型">
-          <span style="font-size: 1.25em">手账</span>
+          <span style="font-size: 1.25em">{{ t('memories.journal') }}</span>
           <!-- <button
             type="button"
             :class="{ active: selectedMemoryType === 'journal' }"
@@ -39,7 +39,7 @@
         </div>
         <nav class="workspace-links" aria-label="回忆导航">
           <el-button  @click="openGallery('journal')">
-            查看手账
+            {{ t('memories.viewJournal') }}
           </el-button>
           <!-- <span></span> -->
           <!-- <button type="button" @click="openGallery('album')">
@@ -65,12 +65,12 @@
       >
         <div v-if="isUploading" class="spinner small"></div>
         <div v-else class="upload-icon">+</div>
-        <p>{{ isUploading ? "上传中..." : "上传或拖拽您的照片，开启您的专属回忆" }}</p>
+        <p>{{ isUploading ? t('common.uploading') : t('memories.uploadPrompt') }}</p>
       </div>
 
       <div v-if="isLoading" class="loading-section">
         <div class="spinner"></div>
-        <p>加载照片中...</p>
+        <p>{{ t('memories.loadingPhotos') }}</p>
       </div>
 
       <template v-else>
@@ -99,11 +99,21 @@
                 :class="{ checked: selectedIndices.has(photo.index) }"
               ></div>
             </div>
+            <button
+              type="button"
+              class="delete-btn"
+              :disabled="deletingIndex === photo.index"
+              :aria-label="t('memories.deleteAria')"
+              @click.stop="deletePhoto(photo.index)"
+            >
+              <el-icon v-if="deletingIndex !== photo.index"><Delete /></el-icon>
+              <span v-else class="spinner small"></span>
+            </button>
           </div>
         </div>
 
         <div class="workspace-footer">
-          <p>最多可以选中8张</p>
+          <p>{{ t('memories.maxSelectTip') }}</p>
           <div class="action-buttons">
             <el-button
               v-if="selectedMemoryType === 'journal'"
@@ -112,7 +122,7 @@
               :disabled="selectedIndices.size === 0 || isGenerating"
               @click="generateJournal"
             >
-              生成记忆手账
+              {{ t('memories.generateJournal') }}
             </el-button>
             <button
               v-else
@@ -120,7 +130,7 @@
               :disabled="selectedIndices.size === 0 || isGenerating"
               @click="generateAlbum"
             >
-              {{ isGenerating ? "生成中..." : "生成记忆相册" }}
+              {{ isGenerating ? t('common.generating') : t('memories.generateAlbum') }}
             </button>
           </div>
         </div>
@@ -142,11 +152,13 @@
 <script setup lang="ts">
 import { computed, ref, reactive, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { ArrowLeftBold } from "@element-plus/icons-vue";
+import { useI18n } from "vue-i18n";
+import { ArrowLeftBold, Delete } from "@element-plus/icons-vue";
 import { useTourStore } from "../composables/useTourStore";
 import journalExampleImage from "../assets/images/example-2.png";
 import albumExampleImage from "../assets/images/example-1.png";
 
+const { t } = useI18n();
 const router = useRouter();
 const tour = useTourStore();
 const apiBase = tour.apiBase;
@@ -157,6 +169,7 @@ const selectedIndices = reactive(new Set<number>());
 const isLoading = ref(false);
 const isUploading = ref(false);
 const isGenerating = ref(false);
+const deletingIndex = ref<number | null>(null);
 const viewingPhoto = ref<string | null>(null);
 const selectedMemoryType = ref<MemoryMode>("journal");
 const maxSelectedPhotos = 8;
@@ -234,6 +247,26 @@ async function handleUpload(event: Event) {
   }
 }
 
+// --- 删除照片 ---
+async function deletePhoto(index: number) {
+  if (deletingIndex.value !== null) return;
+
+  deletingIndex.value = index;
+  try {
+    const resp = await fetch(
+      `${apiBase}/api/images/${encodeURIComponent(tour.currentUsername.value)}/${index}`,
+      { method: "DELETE" },
+    );
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    photos.value = photos.value.filter((p) => p.index !== index);
+    selectedIndices.delete(index);
+  } catch (e) {
+    console.error("删除照片失败:", e);
+  } finally {
+    deletingIndex.value = null;
+  }
+}
+
 // --- 选择操作 ---
 function toggleSelect(index: number) {
   if (selectedIndices.has(index)) {
@@ -300,7 +333,7 @@ onMounted(() => {
 <style scoped lang="scss">
 .memories-page {
   position: relative;
-  z-index: 555;
+  // z-index: 555;
   display: grid;
   grid-template-columns: 1fr 1.05fr;
   min-height: 100vh;
@@ -370,7 +403,7 @@ onMounted(() => {
     min-width: 0;
     min-height: 0;
     overflow: hidden;
-    padding: 4.375rem 8.6% 5.125rem;
+    padding: 6rem 8.6% 5.125rem;
     background: #fff;
 
     .workspace-header,
@@ -523,6 +556,44 @@ onMounted(() => {
           width: 100%;
           height: 100%;
           object-fit: cover;
+        }
+
+        .delete-btn {
+          position: absolute;
+          right: 0.4rem;
+          bottom: 0.4rem;
+          display: grid;
+          place-items: center;
+          width: 1.5rem;
+          height: 1.5rem;
+          padding: 0;
+          border: 0;
+          border-radius: 0.3125rem;
+          background: rgba(0, 0, 0, 0.7);
+          color: #fff;
+          font-size: 0.875rem;
+          line-height: 1;
+          cursor: pointer;
+          opacity: 0;
+          transition: opacity 0.18s, background 0.18s;
+
+          &:disabled {
+            cursor: wait;
+            opacity: 0.7;
+          }
+
+          .spinner.small {
+            width: 0.875rem;
+            height: 0.875rem;
+            border-width: 0.125rem;
+            border-color: rgba(255, 255, 255, 0.4);
+            border-top-color: #fff;
+          }
+        }
+
+        &:hover .delete-btn,
+        .delete-btn:disabled {
+          opacity: 1;
         }
 
         .select-overlay {
@@ -687,7 +758,6 @@ onMounted(() => {
 @media (max-width: 640px) {
   .memories-page {
     .memory-workspace {
-      .workspace-header,
       .workspace-footer {
         align-items: flex-start;
         flex-direction: column;
