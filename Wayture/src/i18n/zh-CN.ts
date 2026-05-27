@@ -32,10 +32,15 @@ export default {
     generateMap: "☼ 生成地图",
     postcardPending: "明信片生成中",
     mapPending: "地图生成中",
+    mapPendingHint: "地图正在生成中，等待时间可能稍长，",
+    mapPendingHint2: "你可以稍后查看...",
     retry: "重新生成明信片",
     tourMapListTitle: "路线地图列表",
     printHint:
       "可下载保存到手机随时查看；如果之后有打印计划，推荐使用 A3 尺寸，画面整体观感会更舒适一些。",
+    longPressTitle: "长按图片保存",
+    longPressHint: "长按图片 · 选择“存储到相册”即可保存",
+    close: "关闭",
   },
   memories: {
     heroGreeting: "Hi, {name} 幸福一家",

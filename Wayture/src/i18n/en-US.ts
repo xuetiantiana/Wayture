@@ -30,10 +30,15 @@ export default {
     editMap: "✎ Edit Map",
     generateMap: "☼ Generate Map",
     mapPending: "Generating Map",
+    mapPendingHint: "Your map is being generated. This may take a little while,",
+    mapPendingHint2: "feel free to check back later...",
     retry: "Regenerate Map",
     tourMapListTitle: "Tour Map List",
     printHint:
       "Save to your phone for easy viewing. If you plan to print, A3 size is recommended for the best look.",
+    longPressTitle: "Long-press to save",
+    longPressHint: "Long-press the image, then choose \"Save to Photos\".",
+    close: "Close",
   },
   memories: {
     heroGreeting: "Hi, {name}",

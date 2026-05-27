@@ -121,7 +121,8 @@ function memories() {
       .hero-button {
         border: 1px solid rgba(190, 200, 159, 1);
         color: #425042;
-        padding: 1.1rem 3.7rem;
+        padding: 1.1rem 1rem;
+        width: 12.5rem;
         border-radius: 16px;
         transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 

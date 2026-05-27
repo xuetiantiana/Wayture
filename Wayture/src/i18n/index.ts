@@ -14,13 +14,13 @@ const messages = {
 function detectInitialLocale(): Locale {
   const saved = localStorage.getItem(STORAGE_KEY) as Locale | null;
   if (saved === "zh-CN" || saved === "en-US") return saved;
-  return navigator.language?.toLowerCase().startsWith("en") ? "en-US" : "zh-CN";
+  return "en-US";
 }
 
 const i18n = createI18n({
   legacy: false,
   locale: detectInitialLocale(),
-  fallbackLocale: "zh-CN",
+  fallbackLocale: "en-US",
   messages,
 });
 

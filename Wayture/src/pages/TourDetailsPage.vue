@@ -267,7 +267,7 @@
                   <img :src="icon1" alt="" />
                   <img :src="icon3" alt="" />
                 </div>
-                <p>地图正在生成中，等待时间可能稍长，<br />你可以稍后查看...</p>
+                <p>{{ t('tour.mapPendingHint') }}<br />{{ t('tour.mapPendingHint2') }}</p>
               </div>
               <img
                 v-else
@@ -306,12 +306,37 @@
         </div>
       </section>
     </div>
+
+    <div
+      v-if="longPressImageUrl"
+      class="long-press-overlay"
+      @click.self="closeLongPress"
+    >
+      <div class="long-press-content">
+        <header class="long-press-header">
+          <strong>{{ t('tour.longPressTitle') }}</strong>
+          <button
+            type="button"
+            class="long-press-close"
+            :aria-label="t('tour.close')"
+            @click="closeLongPress"
+          >×</button>
+        </header>
+        <img
+          class="long-press-image"
+          :src="longPressImageUrl"
+          alt=""
+          draggable="false"
+        />
+        <p class="long-press-hint">{{ t('tour.longPressHint') }}</p>
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import html2canvas from "html2canvas";
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowLeftBold, Download } from "@element-plus/icons-vue";
@@ -331,6 +356,19 @@ const allTourList = tour.allTourList;
 const activeTourRecordId = tour.activeTourRecordId;
 const downloadContainer = ref<HTMLElement | null>(null);
 const imageDownloading = ref(false);
+const longPressImageUrl = ref<string>("");
+// 缓存已合成的下载图片，避免重复调用 html2canvas。
+const cachedDownloadDataUrl = ref<string>("");
+// 只在 iOS / Android 上走“长按存相册”流程，桌面浏览器（包括触屏本）仍用 <a download>。
+const isMobileDevice = (() => {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  const isIOS =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && (navigator.maxTouchPoints ?? 0) > 1);
+  const isAndroid = /Android/i.test(ua);
+  return isIOS || isAndroid;
+})();
 const promptParts = ref<string[]>([]);
 const routeError = ref("");
 const hoverPointId = ref<number | null>(null);
@@ -648,22 +686,38 @@ async function downloadImage() {
 
   imageDownloading.value = true;
   try {
-    await nextTick();
-    const downloadScale = Math.max(window.devicePixelRatio || 1, 3);
-    const canvas = await html2canvas(downloadContainer.value, {
-      backgroundColor: "#ffffff",
-      scale: downloadScale,
-      useCORS: true,
-    });
-    const link = document.createElement("a");
-    link.download = `wayture-${Date.now()}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
+    let dataUrl = cachedDownloadDataUrl.value;
+    if (!dataUrl) {
+      await nextTick();
+      const downloadScale = Math.max(window.devicePixelRatio || 1, 3);
+      const canvas = await html2canvas(downloadContainer.value, {
+        backgroundColor: "#ffffff",
+        scale: downloadScale,
+        useCORS: true,
+      });
+      dataUrl = canvas.toDataURL("image/png");
+      cachedDownloadDataUrl.value = dataUrl;
+    }
+
+    if (isMobileDevice) {
+      // 移动端（尤其是 iOS）无法通过 <a download> 直接存进相册，
+      // 改为弹出全屏预览，让用户长按图片选择"存储到照片"。
+      longPressImageUrl.value = dataUrl;
+    } else {
+      const link = document.createElement("a");
+      link.download = `wayture-${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+    }
   } catch (error) {
     console.error("下载图片失败:", error);
   } finally {
     imageDownloading.value = false;
   }
+}
+
+function closeLongPress() {
+  longPressImageUrl.value = "";
 }
 
 function initPostcardPrompt() {
@@ -698,6 +752,14 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   stopPostcardPolling();
 });
+
+// 切换路线或明信片重新生成后，让下一次下载重新合成。
+watch(
+  () => [activeTourRecordId.value, postcardImageUrl.value] as const,
+  () => {
+    cachedDownloadDataUrl.value = "";
+  },
+);
 </script>
 
 <style scoped lang="scss">
@@ -801,7 +863,6 @@ onBeforeUnmount(() => {
     padding: 1.25rem 0 1.4rem 1.2em;
     background: #fff;
     border-bottom: 1px solid #eee;
-    box-shadow: 0px -1px 0px 0px rgba(0, 0, 0, 0.25);
     border-right: 1px solid #f5f5f5;
 
     .sidebar-header {
@@ -1430,6 +1491,71 @@ onBeforeUnmount(() => {
   40% {
     transform: translateY(-0.625rem);
   }
+}
+
+.long-press-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.82);
+  -webkit-touch-callout: default;
+}
+
+.long-press-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 32rem;
+  max-height: 100%;
+}
+
+.long-press-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  color: #fff;
+  font-size: 1rem;
+
+  .long-press-close {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+}
+
+.long-press-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: calc(100vh - 8rem);
+  object-fit: contain;
+  background: #fff;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: default;
+}
+
+.long-press-hint {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.875rem;
+  text-align: center;
 }
 
 @media (max-width: 980px) {

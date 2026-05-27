@@ -109,6 +109,31 @@
     :initial-index="previewIndex"
     @close="isPreviewVisible = false"
   />
+
+  <div
+    v-if="longPressImageUrl"
+    class="long-press-overlay"
+    @click.self="closeLongPress"
+  >
+    <div class="long-press-content">
+      <header class="long-press-header">
+        <strong>{{ t('tour.longPressTitle') }}</strong>
+        <button
+          type="button"
+          class="long-press-close"
+          :aria-label="t('tour.close')"
+          @click="closeLongPress"
+        >×</button>
+      </header>
+      <img
+        class="long-press-image"
+        :src="longPressImageUrl"
+        alt=""
+        draggable="false"
+      />
+      <p class="long-press-hint">{{ t('tour.longPressHint') }}</p>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -137,6 +162,17 @@ const isLoadingSessions = ref(false);
 const isPreviewVisible = ref(false);
 const previewIndex = ref(0);
 const downloadingImageKey = ref('');
+const longPressImageUrl = ref('');
+// 只在 iOS / Android 上走“长按存相册”流程，桌面浏览器（包括触屏本）仍用 <a download>。
+const isMobileDevice = (() => {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  const isIOS =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints ?? 0) > 1);
+  const isAndroid = /Android/i.test(ua);
+  return isIOS || isAndroid;
+})();
 const taskPollInterval = 30000;
 const taskTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
@@ -180,17 +216,27 @@ async function downloadGalleryImage(img: GallerySession['images'][number]) {
   downloadingImageKey.value = imageKey;
 
   try {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.target = '_blank';
-    link.rel = 'noopener';
-    link.click();
+    if (isMobileDevice) {
+      // 移动端（尤其是 iOS）无法通过 <a download> 直接存进相册，
+      // 改为弹出全屏预览，让用户长按图片选择“存储到照片”。
+      longPressImageUrl.value = url;
+    } else {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.click();
+    }
   } catch (error) {
     console.warn('下载回忆图片失败:', error);
   } finally {
     downloadingImageKey.value = '';
   }
+}
+
+function closeLongPress() {
+  longPressImageUrl.value = '';
 }
 
 function selectSession(sessionId: string) {
@@ -628,6 +674,71 @@ onBeforeUnmount(() => {
   max-width: calc(100vw - 8rem);
   max-height: calc(100vh - 6rem);
   object-fit: contain;
+}
+
+.long-press-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.82);
+  -webkit-touch-callout: default;
+}
+
+.long-press-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 32rem;
+  max-height: 100%;
+}
+
+.long-press-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  color: #fff;
+  font-size: 1rem;
+
+  .long-press-close {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+}
+
+.long-press-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: calc(100vh - 8rem);
+  object-fit: contain;
+  background: #fff;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: default;
+}
+
+.long-press-hint {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.875rem;
+  text-align: center;
 }
 
 @media (max-width: 640px) {
