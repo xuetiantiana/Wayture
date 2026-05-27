@@ -18,7 +18,7 @@
         </div>
       </template>
       <template v-else>
-        <button class="button-primary button-login" @click="login">Log in</button>
+        <button class="button-primary button-login" @click="login">登录</button>
       </template>
     </div>
   </header>
@@ -200,16 +200,15 @@ function openSettings() {
     }
 
     .button-login {
-      padding: 0.3rem 1.35rem;
-      border: 1.5px solid rgba(236, 243, 220, 0.9);
-      border-radius: 999px;
-      background: linear-gradient(135deg, rgba(206, 216, 206, 0.95), rgba(191, 200, 191, 0.92));
-      color: #1f5d50;
-      font-size: 1.25rem;
-      font-weight: 500;
-      box-shadow: 0 2px 8px rgba(23, 52, 47, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      padding: 0.2rem 1.2rem;
+      height: 2.5rem;
+      border: 1px solid rgba(227, 241, 192, 1);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.6);
+      color: rgba(23, 68, 58, 1);
+      font-size: 1rem;
       transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
-      font-weight: 500;
+      backdrop-filter: blur(1.25rem);
       &:hover {
         filter: brightness(1.02);
         transform: translateY(-1px);

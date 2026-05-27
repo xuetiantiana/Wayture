@@ -117,11 +117,10 @@ function memories() {
       flex-wrap: wrap;
 
       .hero-button {
-        min-width: 11.125rem;
-        border: 0.0625rem solid rgba(53, 60, 52, 0.25);
+        border: 1px solid rgba(190, 200, 159, 1);
         color: #425042;
-        padding: 0.875rem 1.625rem;
-        border-radius: 999rem;
+        padding: 1.1rem 3.7rem;
+        border-radius: 16px;
         transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 
         &.button-glass {

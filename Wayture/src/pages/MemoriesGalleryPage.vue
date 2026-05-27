@@ -76,14 +76,17 @@
                 :alt="img.description || '回忆'"
                 @click="openPreview(index)"
               >
-              <button
+              <el-button
                 class="image-download-button"
-                type="button"
+                :loading="downloadingImageKey === `${activeSession.id}-${img.index}`"
+                :disabled="downloadingImageKey === `${activeSession.id}-${img.index}`"
                 @click.stop="downloadGalleryImage(img)"
               >
-                <el-icon><Download /></el-icon>
-                <span>{{ downloadingImageKey === `${activeSession.id}-${img.index}` ? 'Downloading' : 'Download' }}</span>
-              </button>
+                <template #icon>
+                  <Download />
+                </template>
+                <span>下载</span>
+              </el-button>
             </div>
             <p v-if="img.description" class="gallery-desc">{{ img.description }}</p>
           </div>
@@ -356,7 +359,6 @@ onBeforeUnmount(() => {
       gap: 0.625rem;
       padding: 0 0.125rem;
       color: #2f2f2f;
-      font-weight: 700;
       font-size: 1.125rem;
     }
 
@@ -460,14 +462,13 @@ onBeforeUnmount(() => {
         overflow-y: auto;
 
         .gallery-item {
-          flex: 0 0 70%;
-          width: 70%;
+          width: min(80%, calc(100vh - 14rem) / (1024 / 1536));
           margin-block: auto;
         }
       }
 
       .gallery-item {
-        flex: 0 0 calc((100% - 3.75rem) / 4);
+        width: calc(33.333% - 0.833rem);
         overflow: hidden;
         border: 0;
         border-radius: 0;
@@ -502,11 +503,12 @@ onBeforeUnmount(() => {
           display: inline-flex;
           align-items: center;
           gap: 0.375rem;
-          padding: 0.3em 1.25rem;
+          font-size: 0.875rem !important;
+          height: 2.25em!important;
           border: 0;
           border-radius: 0.625rem;
-          background: rgba(0, 0, 0, 0.62);
-          color: #fff;
+          background: rgba(0, 0, 0, 0.62) !important;
+          color: #fff !important;
           font-size: 1rem;
           box-shadow: 0 0.375rem 1rem rgba(0, 0, 0, 0.2);
           cursor: pointer;

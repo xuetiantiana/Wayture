@@ -289,7 +289,7 @@
               <template #icon>
                 <Download />
               </template>
-              <span>Download</span>
+              <span>下载</span>
             </el-button>
           </div>
           <p
@@ -648,9 +648,10 @@ async function downloadImage() {
   imageDownloading.value = true;
   try {
     await nextTick();
+    const downloadScale = Math.max(window.devicePixelRatio || 1, 3);
     const canvas = await html2canvas(downloadContainer.value, {
       backgroundColor: "#ffffff",
-      scale: window.devicePixelRatio || 1,
+      scale: downloadScale,
       useCORS: true,
     });
     const link = document.createElement("a");
@@ -795,7 +796,7 @@ onBeforeUnmount(() => {
     box-sizing: border-box;
     min-width: 0;
     height: 100%;
-    padding: 1.4rem 0 1.4rem 1.2em;
+    padding: 1.25rem 0 1.4rem 1.2em;
     background: #fff;
     border-bottom: 1px solid #eee;
     box-shadow: 0px -1px 0px 0px rgba(0, 0, 0, 0.25);
@@ -827,7 +828,6 @@ onBeforeUnmount(() => {
       gap: 0.625rem;
       padding: 0 0.125rem;
       color: #2f2f2f;
-      font-weight: 700;
       font-size: 1.125rem;
     }
 
@@ -878,14 +878,14 @@ onBeforeUnmount(() => {
     .tour-content-panels {
       position: relative;
       box-sizing: border-box;
-      padding-top: 4.5rem;
+      padding-top: 4.8rem;
       background: #f5f5f5;
     }
 
     .side-panel {
       width: 34%;
       min-width: 22rem;
-      margin: 2rem;
+      margin: 1rem;
       border-radius: 1rem;
     }
 
@@ -1256,7 +1256,8 @@ onBeforeUnmount(() => {
         right: 1rem;
         bottom: 1rem;
         z-index: 5;
-        height: 2.25rem !important;
+        height: 2.25em !important;
+        font-size: 0.875rem !important;
         background: rgba(0, 0, 0, 0.62) !important;
         color: #fff !important;
       }
