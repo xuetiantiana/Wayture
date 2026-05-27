@@ -82,7 +82,7 @@
             >
               <el-icon><ArrowLeftBold /></el-icon>
             </button>
-            <h2 class="section-title">{{ activeTourTitle }}</h2>
+            <h2 class="section-title">{{ !isTourListPage ? activeTourTitle : '地图路线' }}</h2>
             <button
               v-if="!isTourListPage"
               class="tour-map-button"
@@ -106,7 +106,7 @@
             class="retry-button"
             @click="generatePostcard()"
           >
-            重新生成明信片
+            重新生成地图
           </button>
         </div>
 
@@ -132,8 +132,8 @@
               <span class="label">景点</span>
               <p>
                 <strong
-                  >{{ index + 1 }}.{{ point.name }}-{{ point.field }}</strong
-                >
+                  >{{ index + 1 }}.{{ point.name }}</strong
+                >&nbsp;- {{ point.field }}
               </p>
               <div class="content-detail">
                 <p>建议停留: {{ point.cost }}</p>
@@ -204,7 +204,7 @@
             </template>
             <template v-else-if="isPostcardPending">
               <el-button type="primary" :loading="true" disabled>
-                明信片生成中
+                地图生成中
               </el-button>
             </template>
             <template v-else>
@@ -215,7 +215,7 @@
                 class="map-action map-action-confirm"
                 :class="{ disabled: !canGeneratePostcard }"
                 @click="generatePostcard()"
-                >☼ 生成明信片</span
+                >☼ 生成地图</span
               >
             </template>
           </div>
@@ -263,8 +263,8 @@
             >
               <div v-if="isPostcardPending" class="postcard-loading">
                 <div class="loading-icons">
-                  <img :src="icon1" alt="" />
                   <img :src="icon2" alt="" />
+                  <img :src="icon1" alt="" />
                   <img :src="icon3" alt="" />
                 </div>
                 <p>地图正在生成中，等待时间可能稍长，<br />你可以稍后查看...</p>
@@ -741,6 +741,7 @@ onBeforeUnmount(() => {
       font-size: 1.125rem;
       text-overflow: ellipsis;
       white-space: nowrap;
+      font-weight: 600;
     }
 
     .map-actions {
@@ -800,7 +801,7 @@ onBeforeUnmount(() => {
     background: #fff;
     border-bottom: 1px solid #eee;
     box-shadow: 0px -1px 0px 0px rgba(0, 0, 0, 0.25);
-
+    border-right: 1px solid #f5f5f5;
 
     .sidebar-header {
       display: flex;
@@ -829,6 +830,7 @@ onBeforeUnmount(() => {
       padding: 0 0.125rem;
       color: #2f2f2f;
       font-size: 1.125rem;
+      font-weight: 600;
     }
 
     .tour-record-list {
@@ -904,7 +906,7 @@ onBeforeUnmount(() => {
     min-width: 25rem;
     max-width: 45rem;
     overflow: visible;
-    padding: 0 2em;
+    padding: 0 .75rem;
     background: #fff;
 
     .details-topbar {
@@ -913,7 +915,7 @@ onBeforeUnmount(() => {
       gap: 1rem;
       box-sizing: border-box;
       margin-bottom: 1.25rem;
-      padding-top: 1.3rem;
+      padding: 1.3rem 0.5rem 0;
     }
 
     .details-title-row {
@@ -1021,21 +1023,21 @@ onBeforeUnmount(() => {
         grid-template-columns: 5rem 1fr;
         gap: 0.875rem;
         width: 100%;
-        border-radius: 1.5rem;
+        border-radius: 12px;
         color: inherit;
         cursor: pointer;
-        padding: 0.75rem;
+        padding: 0.5rem;
         text-align: left;
         transition:
           background-color 0.18s ease,
           box-shadow 0.18s ease;
 
         &.active {
-          background: rgba(255, 183, 0, 0.12);
-          box-shadow: inset 0 0 0 0.125rem rgba(255, 183, 0, 0.42);
+          background: rgba(255, 183, 0, 0.02);
+          box-shadow: inset 0 0 0 1.5px rgba(255, 183, 0, 0.6);
 
           .content-detail {
-            background: rgba(255, 183, 0, 0.18);
+            background: rgba(30, 0, 255, 0.18);
           }
         }
 
@@ -1045,7 +1047,7 @@ onBeforeUnmount(() => {
           width: 4.5rem;
           height: 4.5rem;
           overflow: hidden;
-          border-radius: 1rem;
+          border-radius: 12px;
           background: rgba(59, 130, 246, 0.14);
           color: #eff6ff;
           font-weight: 700;
@@ -1060,7 +1062,6 @@ onBeforeUnmount(() => {
 
         .step-content {
           strong {
-            display: block;
             margin-bottom: 0.375rem;
           }
 
@@ -1073,8 +1074,8 @@ onBeforeUnmount(() => {
 
           .content-detail {
             padding: 0.5em 0.8em;
-            border-radius: 1rem;
-            background: rgba(59, 130, 246, 0.08);
+            border-radius: 8px;
+            background: #f5f5f5;
             font-size: 0.875em;
 
             .step-description {
@@ -1092,13 +1093,15 @@ onBeforeUnmount(() => {
 
   .tour-list-layer {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 100%;
+    top: 1.25rem;
+    left: calc(100% - 1rem);
     z-index: 30;
     width: min(20rem, calc(100vw - 100% - 1.5rem));
     min-width: 24rem;
+    max-height: calc(100% - 2em);
     background: transparent;
+    display: flex;
+    flex-direction: column;
   }
 
   .tour-list-drawer {
@@ -1108,7 +1111,10 @@ onBeforeUnmount(() => {
     height: 100%;
     border-radius: 16px;
     background: #fff;
-    box-shadow: 0.25rem 0 1rem rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(236, 236, 236, 1);
+    box-shadow: 0px 0px 8px 0px rgba(92, 92, 92, 0.1);
+    flex: 1;
+    overflow: hidden;
 
     .tour-list-header {
       display: none;
@@ -1150,7 +1156,8 @@ onBeforeUnmount(() => {
       flex-direction: column;
       gap: 0.75rem;
       overflow-y: auto;
-      padding: 1.875rem 1.5rem;
+      padding: 0.5rem 0.5rem;
+      flex: 1;
     }
 
     .tour-list-item {
@@ -1350,8 +1357,9 @@ onBeforeUnmount(() => {
       align-items: center;
       justify-content: center;
       flex-direction: column;
-      aspect-ratio: 600 / 424;
+      aspect-ratio: 1536 / 1024;
       background: #fff;
+      overflow: hidden;
 
       &::after {
         content: "";
@@ -1364,11 +1372,11 @@ onBeforeUnmount(() => {
 
       img {
         display: block;
-        width: 100%;
+        width: auto;
         height: 100%;
         position: relative;
         z-index: 2;
-        object-fit: cover;
+        // object-fit: cover;
       }
 
       .postcard-loading {

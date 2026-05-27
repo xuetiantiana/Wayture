@@ -48,8 +48,8 @@
         </div>
         <div v-if="(activeSession.status === 'pending' || activeSession.status === 'processing') && activeSession.images.length === 0" class="gallery-pending">
           <div class="loading-icons">
-            <img :src="icon1" alt="" />
             <img :src="icon2" alt="" />
+            <img :src="icon1" alt="" />
             <img :src="icon3" alt="" />
           </div>
           <p>内容正在生成中，等待时间可能稍长，<br/>你可以稍后查看...</p>
@@ -360,6 +360,7 @@ onBeforeUnmount(() => {
       padding: 0 0.125rem;
       color: #2f2f2f;
       font-size: 1.125rem;
+      font-weight: 600;
     }
 
     .session-list {

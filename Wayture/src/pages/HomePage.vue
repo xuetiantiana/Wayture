@@ -104,7 +104,7 @@ function memories() {
     }
 
     .hero-caption {
-      margin: 0 0 2em;
+      margin: 0 0 4em;
       color: #0f0e0a;
       font-size: 2rem;
       font-weight: 400;
