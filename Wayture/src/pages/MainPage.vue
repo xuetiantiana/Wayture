@@ -76,10 +76,20 @@
         :total-selected-count="totalSelectedCount"
         @add="addPoint"
       />
-      <ul class="tour-list-case">
-        <p>{{ t('mainPage.themeRoutes') }}</p>
-        <li v-for="item in tourCases" :key="item.name" @click="applyTourCase(item.ids)">{{ item.label }}</li>
-      </ul>
+      <div class="tour-list-case" :class="{ open: tourCasesOpen }">
+        <button
+          class="tour-list-case-header"
+          type="button"
+          :aria-expanded="tourCasesOpen"
+          @click="tourCasesOpen = !tourCasesOpen"
+        >
+          <span>{{ t('mainPage.themeRoutes') }}</span>
+          <el-icon class="tour-list-case-arrow"><ArrowRightBold /></el-icon>
+        </button>
+        <ul class="tour-list-case-items">
+          <li v-for="item in tourCases" :key="item.name" @click="applyTourCase(item.ids)">{{ item.label }}</li>
+        </ul>
+      </div>
     </div>
 
     <div class="selected-popup" :class="{ collapsed: !selectedPopupOpen }">
@@ -152,6 +162,7 @@ const allTourList = tour.allTourList;
 const selectedPointId = ref<number | null>(null);
 const selectedPoint = computed(() => points.value.find((item) => item.id === selectedPointId.value) ?? null);
 const selectedPopupOpen = ref(true);
+const tourCasesOpen = ref(false);
 const routeLoading = ref(false);
 const mapFrameRef = ref<HTMLElement | null>(null);
 const detailModalStyle = ref<Record<string, string>>({});
@@ -564,7 +575,7 @@ onMounted(async () => {
   position: absolute;
   top: 30%;
   right: 1.625rem;
-  z-index: 12;
+  z-index: 99;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -574,10 +585,33 @@ onMounted(async () => {
   border-radius: 12px;
   backdrop-filter: blur(6px);
 
-  p {
-    margin: 0;
+  .tour-list-case-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
     color: #000;
+    font-size: 1rem;
     font-weight: 400;
+    text-align: left;
+    cursor: default;
+  }
+
+  .tour-list-case-arrow {
+    display: none;
+    color: #000;
+    transition: transform 0.18s ease;
+  }
+
+  .tour-list-case-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
   }
 
   li {
@@ -713,6 +747,7 @@ onMounted(async () => {
   .popup-empty {
     padding: 0.5rem 1rem;
     color: #e2e8f0;
+    font-size: 0.875rem;
   }
 
   .selected-list {
@@ -889,21 +924,6 @@ button {
   pointer-events: none;
 }
 
-@media (max-width: 980px) {
-  .map-card {
-    .map-container {
-      .map-viewport {
-        height: 100%;
-        overflow: auto;
-      }
-
-      .map-image {
-        width: max(100%, 56rem);
-        min-width: 56rem;
-      }
-    }
-  }
-}
 
 @media (max-width: 640px) {
   .main-tabbar {
@@ -913,26 +933,57 @@ button {
   .map-card {
     .map-container {
       .field-legend {
-        top: 4rem;
-        left: 0.75rem;
+        top: 6rem;
+        left: 0.25rem;
         max-width: calc(100% - 1.5rem);
+        font-size: 12px;
       }
 
       .map-image {
-        width: 62rem;
-        min-width: 62rem;
+        width: max-content;
+
+        .map-img {
+          width: auto;
+          height: 100vh;
+        }
       }
     }
   }
 
   .selected-popup {
-    right: 0.75rem;
-    bottom: 0.75rem;
+    right: 0.25rem;
+    bottom: 0.25rem;
     width: min(18rem, calc(100% - 1.5rem));
   }
 
   .tour-list-case {
-    right: 0.75rem;
+    right:0.25rem;
+    top: 5.5rem;
+    transform: translateY(0);
+    border-radius: 6px;
+
+    .tour-list-case-header {
+      min-width: 7.5rem;
+      cursor: pointer;
+    }
+
+    .tour-list-case-arrow {
+      display: inline-flex;
+    }
+
+    .tour-list-case-items {
+      display: none;
+    }
+
+    &.open {
+      .tour-list-case-arrow {
+        transform: rotate(90deg);
+      }
+
+      .tour-list-case-items {
+        display: flex;
+      }
+    }
   }
 }
 </style>

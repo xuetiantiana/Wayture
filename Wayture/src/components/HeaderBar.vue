@@ -242,4 +242,16 @@ function openSettings() {
     }
   }
 }
+
+@media (max-width: 640px) {
+  .header-bar{
+    .brand{
+      left: 12px;
+    }
+
+    .header-actions{
+      right: 12px;
+    }
+  }
+}
 </style>

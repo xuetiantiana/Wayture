@@ -87,7 +87,7 @@ export default {
         emptyJournal: "No journals yet. Upload photos first to generate one.",
         emptyAlbum: "No albums yet. Upload photos first to generate one.",
         goUpload: "Upload photos",
-        pickFromLeft: "Select a memory from the list on the left.",
+        pickFromLeft: "Select a memory from the list",
         generating: "Generating",
         failedStatus: "Failed",
         usePhotos: "Generated from {count} photos",

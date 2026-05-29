@@ -52,6 +52,18 @@ html{
   }
 }
 
+@media (max-width: 640px) {
+   html {
+     font-size: 14px;
+   }
+}
+
+@media (max-width: 400px) {
+   html {
+     font-size: 13px;
+   }
+}
+
 button,
 input,
 textarea {

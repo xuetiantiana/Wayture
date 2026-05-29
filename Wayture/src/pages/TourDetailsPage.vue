@@ -16,8 +16,17 @@
         <div class="album-label">
           <span>{{ t('common.back') }}</span>
         </div>
+        <button
+          class="tour-record-list-toggle"
+          type="button"
+          :aria-label="isTourRecordListOpen ? '关闭路线列表' : '打开路线列表'"
+          @click="isTourRecordListOpen = !isTourRecordListOpen"
+        >
+          <el-icon v-if="isTourRecordListOpen"><CloseBold /></el-icon>
+          <img v-else :src="listIcon" alt="" />
+        </button>
       </div>
-      <div class="tour-record-list">
+      <div class="tour-record-list" :class="{ open: isTourRecordListOpen }">
         <div
           v-for="record in allTourList"
           :key="record.id"
@@ -87,10 +96,11 @@
               v-if="!isTourListPage"
               class="tour-map-button"
               type="button"
-              aria-label="游览地图"
+              :aria-label="isTourListOpen ? '关闭游览列表' : '游览地图'"
               @click="isTourListOpen = !isTourListOpen"
             >
-              <img :src="listIcon" alt="" />
+              <el-icon v-if="isTourListOpen" style="font-size: 1.5rem"><CloseBold /></el-icon>
+              <img v-else :src="listIcon" alt="" />
             </button>
           </div>
           <p class="subtitle">
@@ -220,13 +230,10 @@
             </template>
           </div>
         </div>
-        <div class="map-scroll-area">
+        <div ref="mapScrollArea" class="map-scroll-area">
           <div
             ref="downloadContainer"
-            :style="{
-              width: '600px',
-              margin: '0 auto',
-            }"
+            :style="downloadContainerStyle"
             class="dowmload-container"
           >
             <div class="map-frame tour-map">
@@ -300,9 +307,10 @@
               <span>{{ t('common.download') }}</span>
             </el-button>
           </div>
-          <p
+          
+        </div>
+        <p
             style="
-              margin-top: 1rem;
               font-size: 0.875rem;
               color: #555;
               text-align: center;
@@ -311,7 +319,6 @@
           >
             {{ t('tour.printHint') }}
           </p>
-        </div>
       </section>
     </div>
 
@@ -347,7 +354,7 @@ import html2canvas from "html2canvas";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeftBold, Download, StarFilled } from "@element-plus/icons-vue";
+import { ArrowLeftBold, CloseBold, Download, StarFilled } from "@element-plus/icons-vue";
 import { useTourStore } from "../composables/useTourStore";
 import icon1 from "../assets/images/icon1.png";
 import icon2 from "../assets/images/icon2.png";
@@ -362,9 +369,11 @@ const tour = useTourStore();
 const points = tour.points;
 const allTourList = tour.allTourList;
 const activeTourRecordId = tour.activeTourRecordId;
+const mapScrollArea = ref<HTMLElement | null>(null);
 const downloadContainer = ref<HTMLElement | null>(null);
 const imageDownloading = ref(false);
 const longPressImageUrl = ref<string>("");
+const downloadScale = ref(1);
 // 缓存已合成的下载图片，避免重复调用 html2canvas。
 const cachedDownloadDataUrl = ref<string>("");
 // 只在 iOS / Android 上走“长按存相册”流程，桌面浏览器（包括触屏本）仍用 <a download>。
@@ -381,6 +390,7 @@ const promptParts = ref<string[]>([]);
 const routeError = ref("");
 const hoverPointId = ref<number | null>(null);
 const isTourListOpen = ref(false);
+const isTourRecordListOpen = ref(false);
 const postcardPollInterval = 30000;
 let postcardPollTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -435,6 +445,12 @@ const activeTourTitle = computed(() => {
 const activeRouteSummary = computed(
   () => activeTourRecord.value?.routeSummary || "",
 );
+
+const downloadContainerStyle = computed(() => ({
+  width: "600px",
+  margin: "0 auto",
+  "--download-scale": String(downloadScale.value),
+}));
 
 // 根据当前路线记录中的 selectedIds 恢复路线顺序。
 const orderedPoints = computed(() => {
@@ -501,6 +517,8 @@ function selectTourRecordById(recordId: string, closeDrawer = true) {
   if (closeDrawer) {
     isTourListOpen.value = false;
   }
+
+  isTourRecordListOpen.value = false;
 
   hoverPointId.value = null;
   routeError.value = "";
@@ -687,6 +705,19 @@ function autoGeneratePostcard() {
   generatePostcard();
 }
 
+function updateDownloadScale() {
+  if (typeof window === "undefined") return;
+
+  const shouldScale = window.matchMedia("(max-width: 980px)").matches;
+  if (!shouldScale) {
+    downloadScale.value = 1;
+    return;
+  }
+
+  const availableWidth = mapScrollArea.value?.clientWidth || window.innerWidth;
+  downloadScale.value = Math.min(1, availableWidth / 600);
+}
+
 async function downloadImage() {
   if (imageDownloading.value || !downloadContainer.value) {
     return;
@@ -755,10 +786,14 @@ onMounted(async () => {
   }
 
   autoGeneratePostcard();
+  await nextTick();
+  updateDownloadScale();
+  window.addEventListener("resize", updateDownloadScale);
 });
 
 onBeforeUnmount(() => {
   stopPostcardPolling();
+  window.removeEventListener("resize", updateDownloadScale);
 });
 
 // 切换路线或明信片重新生成后，让下一次下载重新合成。
@@ -766,6 +801,7 @@ watch(
   () => [activeTourRecordId.value, postcardImageUrl.value] as const,
   () => {
     cachedDownloadDataUrl.value = "";
+    nextTick(updateDownloadScale);
   },
 );
 </script>
@@ -893,6 +929,31 @@ watch(
       cursor: pointer;
     }
 
+    .tour-record-list-toggle {
+      display: none;
+      place-items: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      margin-left: auto;
+      padding: 0;
+      border: 0;
+      border-radius: 0.5625rem;
+      background: transparent;
+      color: #1f2933;
+      cursor: pointer;
+
+      img {
+        display: block;
+        width: 2rem;
+        height: 2rem;
+        object-fit: contain;
+      }
+
+      .el-icon {
+        font-size: 1.5rem;
+      }
+    }
+
     .album-label {
       display: flex;
       align-items: center;
@@ -956,7 +1017,7 @@ watch(
 
     .side-panel {
       width: 34%;
-      min-width: 22rem;
+      min-width: 18rem;
       margin: 1rem;
       border-radius: 1rem;
     }
@@ -1257,7 +1318,7 @@ watch(
     flex: 1;
     flex-direction: column;
     min-width: 0;
-    overflow: hidden;
+    overflow: auto;
     background-color: #f5f5f5;
 
     .map-toolbar {
@@ -1321,8 +1382,7 @@ watch(
     .map-scroll-area {
       flex: 1;
       min-width: 0;
-      overflow: auto;
-      padding: 2em 0;
+      padding: 1em 0;
     }
 
     .dowmload-container {
@@ -1610,17 +1670,23 @@ watch(
 }
 
 @media (max-width: 980px) {
-  .flex-row {
-    flex-direction: column;
+  .tour-details-shell{
+     .tour-content-toolbar {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    &.tour-list-shell .tour-content-panels{
+      padding-top: 9rem;
+    }
   }
 }
-@media (max-width: 680px) {
+@media (max-width: 980px) {
   .tour-details-shell {
     flex-direction: column;
     gap: 1rem;
     height: auto;
     min-height: 100vh;
-    padding: 1rem 1rem 1.25rem;
 
     .tour-content-panels {
       flex-direction: column;
@@ -1629,7 +1695,63 @@ watch(
 
       .side-panel {
         width: 100%;
+        margin: 0;
+        padding: 0 1rem;
       }
+      .tour-content-toolbar{
+        flex-direction: column;
+        align-items: baseline;
+      }
+    }
+
+    .tour-record-sidebar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      flex: 0 0 auto;
+      height: auto;
+      min-height: auto;
+      overflow: visible;
+      padding: 1rem 1rem 0;
+      border: 0;
+
+      .sidebar-header {
+        margin-bottom: 0;
+      }
+
+      .tour-record-list-toggle {
+        display: grid;
+      }
+
+      .tour-record-list {
+        display: none;
+      }
+
+      .tour-record-list.open {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        left: 1rem;
+        right: 1rem;
+        z-index: 25;
+        display: flex;
+        flex-direction: column;
+        max-height: min(60vh, 28rem);
+        padding: 0.5rem;
+        border: 1px solid rgba(236, 236, 236, 1);
+        border-radius: 0.75rem;
+        background: #fff;
+        box-shadow: 0 0.75rem 1.75rem rgba(15, 23, 42, 0.14);
+        overflow-y: auto;
+
+        .tour-record-item {
+          width: 100%;
+          box-sizing: border-box;
+        }
+      }
+    }
+
+    .side-panel {
+      border-radius: 0;
     }
 
     .side-panel {
@@ -1639,14 +1761,16 @@ watch(
       max-width: none;
       max-height: none;
       overflow: visible;
+      border-right: none;
+      border-radius: 0;
 
       .details-topbar {
-        padding-top: 0;
+        padding: 1em 0 0;
       }
 
       .progress-list {
         flex: none;
-        max-height: 42vh;
+        max-height: 48vh;
         gap: 0.875rem;
         padding-right: 0.25rem;
         padding-bottom: 0.5rem;
@@ -1655,11 +1779,20 @@ watch(
           grid-template-columns: 2.5rem 1fr;
           gap: 0.75rem;
           padding: 0.625rem;
+          border-radius: 1rem;
 
           .step-number {
             width: 2.5rem;
             height: 2.5rem;
             border-radius: 0.75rem;
+          }
+
+          .step-content {
+            min-width: 0;
+
+            strong {
+              overflow-wrap: anywhere;
+            }
           }
         }
       }
@@ -1667,10 +1800,14 @@ watch(
 
     .tour-list-layer {
       position: fixed;
-      inset: 0 1rem 0 auto;
-      width: min(26rem, calc(100vw - 2rem));
+      left: 1em;
+      width: calc(100vw - 2em);
+      top: 4.5em;
       min-width: 0;
       background: rgba(0, 0, 0, 0.04);
+      .tour-list-body{
+        max-height: 50vh;
+      }
     }
 
     .map-panel {
@@ -1681,6 +1818,10 @@ watch(
         align-items: flex-start;
         flex-direction: column;
         padding: 0.875rem;
+
+        strong {
+          overflow-wrap: anywhere;
+        }
 
         .map-actions {
           width: 100%;
@@ -1695,50 +1836,21 @@ watch(
 
       .map-scroll-area {
         padding: 1rem 0;
+        aspect-ratio: 600 / 825;
+        position: relative;
+        overflow: hidden;
+        max-width: 600px;
+        .dowmload-container{
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%) scale(var(--download-scale, 1));
+        }
       }
 
       .postcard-preview {
         width: 100%;
-      }
-    }
-  }
-}
 
-@media (max-width: 640px) {
-  .tour-details-shell {
-    padding: 1rem 0.75rem 1rem;
-
-    .side-panel,
-    .map-panel {
-      border-radius: 0.75rem;
-    }
-
-    .side-panel {
-      .progress-list {
-        max-height: 48vh;
-
-        .progress-item {
-          border-radius: 1rem;
-
-          .step-content {
-            min-width: 0;
-
-            strong {
-              overflow-wrap: anywhere;
-            }
-          }
-        }
-      }
-    }
-
-    .map-panel {
-      .map-toolbar {
-        strong {
-          overflow-wrap: anywhere;
-        }
-      }
-
-      .postcard-preview {
         .postcard-loading {
           padding: 2rem 1.25rem;
         }

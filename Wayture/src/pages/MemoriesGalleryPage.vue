@@ -8,13 +8,22 @@
         <div class="album-label">
           <span>{{ t('common.back') }}</span>
         </div>
+        <button
+          class="session-list-toggle"
+          type="button"
+          :aria-label="isSessionListOpen ? '关闭回忆列表' : '打开回忆列表'"
+          @click="isSessionListOpen = !isSessionListOpen"
+        >
+          <el-icon v-if="isSessionListOpen"><CloseBold /></el-icon>
+          <img v-else :src="listIcon" alt="" />
+        </button>
       </div>
 
-      <div v-if="isLoadingSessions" class="loading-section">
+      <div v-if="isLoadingSessions" class="loading-section" :class="{ open: isSessionListOpen }">
         <div class="spinner"></div>
         <p>{{ t('common.loading') }}</p>
       </div>
-      <div v-else class="session-list">
+      <div v-else class="session-list" :class="{ open: isSessionListOpen }">
         <div
           v-for="session in sessions"
           :key="session.id"
@@ -141,11 +150,12 @@ import { ref, computed, onBeforeUnmount, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { ElImageViewer } from 'element-plus';
-import { ArrowLeftBold, Download } from '@element-plus/icons-vue';
+import { ArrowLeftBold, CloseBold, Download } from '@element-plus/icons-vue';
 import { useTourStore, type GallerySession } from '../composables/useTourStore';
 import icon1 from '../assets/images/icon1.png';
 import icon2 from '../assets/images/icon2.png';
 import icon3 from '../assets/images/icon3.png';
+import listIcon from '../assets/images/list.png';
 
 type GalleryType = 'journal' | 'album';
 type GallerySessionWithTask = GallerySession & {
@@ -163,6 +173,7 @@ const isPreviewVisible = ref(false);
 const previewIndex = ref(0);
 const downloadingImageKey = ref('');
 const longPressImageUrl = ref('');
+const isSessionListOpen = ref(false);
 // 只在 iOS / Android 上走“长按存相册”流程，桌面浏览器（包括触屏本）仍用 <a download>。
 const isMobileDevice = (() => {
   if (typeof navigator === 'undefined') return false;
@@ -244,6 +255,7 @@ function selectSession(sessionId: string) {
   isPreviewVisible.value = false;
   previewIndex.value = 0;
   activeSessionId.value = sessionId;
+  isSessionListOpen.value = false;
 }
 
 function formatDate(iso: string): string {
@@ -361,8 +373,7 @@ onBeforeUnmount(() => {
 .gallery-page {
   position: relative;
   z-index: 555;
-  display: grid;
-  grid-template-columns: 20rem 1fr;
+  display: flex;
   height: 100%;
   overflow: hidden;
   background: #fff;
@@ -370,13 +381,13 @@ onBeforeUnmount(() => {
 
   .session-sidebar {
     display: flex;
+    flex: 0 0 20rem;
     flex-direction: column;
     box-sizing: border-box;
     height: 100%;
     min-height: 0;
     overflow: hidden;
     padding: 1.4rem 0 1.4rem 1.2rem;
-    padding-right: 0rem !important;
     background: #fff;
     box-shadow: -1px 0px 0px 0px rgba(245, 245, 245, 1) inset;
 
@@ -399,6 +410,31 @@ onBeforeUnmount(() => {
       color: #1f2933;
       line-height: 1;
       cursor: pointer;
+    }
+
+    .session-list-toggle {
+      display: none;
+      place-items: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      margin-left: auto;
+      padding: 0;
+      border: 0;
+      border-radius: 0.5625rem;
+      background: transparent;
+      cursor: pointer;
+
+      img {
+        display: block;
+        width: 2rem;
+        height: 2rem;
+        object-fit: contain;
+      }
+
+      .el-icon {
+        color: #1f2933;
+        font-size: 1.5rem;
+      }
     }
 
     .album-label {
@@ -743,15 +779,65 @@ onBeforeUnmount(() => {
 
 @media (max-width: 640px) {
   .gallery-page {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     height: auto;
     min-height: 100%;
     overflow: auto;
 
     .session-sidebar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      flex: 0 0 auto;
       height: auto;
       min-height: auto;
-      overflow-y: visible;
+      overflow: visible;
+      padding: 1rem 1rem 0;
+
+      .sidebar-header {
+        margin-bottom: 0;
+      }
+
+      .session-list-toggle {
+        display: grid;
+      }
+
+      .loading-section,
+      .session-list {
+        display: none;
+      }
+
+      .loading-section.open,
+      .session-list.open {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        left: 1rem;
+        right: 1rem;
+        z-index: 25;
+        display: flex;
+        max-height: min(60vh, 28rem);
+        padding: 0.5rem;
+        border: 1px solid rgba(236, 236, 236, 1);
+        border-radius: 0.75rem;
+        background: #fff;
+        box-shadow: 0 0.75rem 1.75rem rgba(15, 23, 42, 0.14);
+      }
+
+      .loading-section.open {
+        align-items: center;
+        justify-content: center;
+        min-height: 8rem;
+      }
+
+      .session-list.open {
+        flex-direction: column;
+        overflow-y: auto;
+
+        .session-item {
+          width: 100%;
+          box-sizing: border-box;
+        }
+      }
     }
 
     .gallery-main {

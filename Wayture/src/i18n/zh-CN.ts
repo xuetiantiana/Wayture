@@ -90,7 +90,7 @@ export default {
     emptyJournal: "暂无回忆日志，请先上传照片并生成日志。",
     emptyAlbum: "暂无回忆图册，请先上传照片并生成图册。",
     goUpload: "去上传照片",
-    pickFromLeft: "请从左侧选择一次回忆。",
+    pickFromLeft: "请从列表中选择一次回忆。",
     generating: "生成中",
     failedStatus: "生成失败",
     usePhotos: "使用 {count} 张照片生成",

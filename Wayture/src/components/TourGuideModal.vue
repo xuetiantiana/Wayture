@@ -170,8 +170,8 @@ function closeOnOverlay() {
 
     .close-btn {
       position: absolute;
-      right: 20px;
-      top: 18px;
+      right: 16px;
+      top: 4px;
       padding: 0 4px;
       border: none;
       border-radius: 8px;
@@ -324,7 +324,6 @@ function closeOnOverlay() {
       }
 
       .btn-primary {
-        flex: 1;
         width: 100%;
         background: rgb(255, 183, 0);
         color: #000;
