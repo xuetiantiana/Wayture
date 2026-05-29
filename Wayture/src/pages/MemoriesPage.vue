@@ -294,17 +294,30 @@ function openGallery(type: MemoryMode) {
   router.push({ path: "/memories-gallery", query: { type } });
 }
 
+function buildMemoryAdditionPrompt(type: MemoryMode): string {
+  const nickname = tour.userSettings.value.nickname;
+  const tourStyle = tour.userSettings.value.tourStyle;
+  const parts: string[] = [];
+
+  if (nickname) parts.push(`昵称/标题: ${nickname}`);
+  if (tourStyle) parts.push(`游览风格: ${tourStyle}`);
+
+  return parts.join("\n");
+}
+
 async function generateMemory(endpoint: string, type: MemoryMode) {
   if (selectedIndices.size === 0) return;
 
   isGenerating.value = true;
   try {
+    const additionPrompt = buildMemoryAdditionPrompt(type);
     const resp = await fetch(`${apiBase}${endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         username: tour.currentUsername.value,
         selected_indices: Array.from(selectedIndices),
+        addition_prompt: additionPrompt,
       }),
     });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);

@@ -41,7 +41,7 @@
               <img v-if="selectedIds.includes(point.id)" class="select-icon" :src="checkIcon" alt="" />
             </button>
             <div class="img-card-name">{{ point.name }}</div>
-            <button class="img-card-detail" type="button" @click.stop="showDetail(point.id, $event)">详情介绍</button>
+            <button class="img-card-detail" type="button" @click.stop="showDetail(point.id, $event)">View Details</button>
           </div>
         </article>
       </template>

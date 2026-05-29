@@ -232,6 +232,14 @@
             <div class="map-frame tour-map">
               <img class="map-image" :src="tour.mapImageUrl" alt="园区地图" />
               <div
+                class="map-entrance-marker"
+                aria-label="入口"
+                title="入口"
+              >
+                <!-- <span class="entrance-label">入口</span> -->
+                <el-icon class="entrance-star"><StarFilled /></el-icon>
+              </div>
+              <div
                 v-for="point in points"
                 :key="point.id"
                 class="map-point"
@@ -339,7 +347,7 @@ import html2canvas from "html2canvas";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { ArrowLeftBold, Download } from "@element-plus/icons-vue";
+import { ArrowLeftBold, Download, StarFilled } from "@element-plus/icons-vue";
 import { useTourStore } from "../composables/useTourStore";
 import icon1 from "../assets/images/icon1.png";
 import icon2 from "../assets/images/icon2.png";
@@ -970,6 +978,7 @@ watch(
     overflow: visible;
     padding: 0 .75rem;
     background: #fff;
+    border-right: 1px solid #f5f5f5;
 
     .details-topbar {
       display: flex;
@@ -1343,6 +1352,48 @@ watch(
         display: block;
         width: 100%;
         height: auto;
+      }
+
+      .map-entrance-marker {
+        position: absolute;
+        left: 52.5%;
+        top: 92%;
+        z-index: 7;
+        display: grid;
+        place-items: center;
+        width: 1.5rem;
+        height: 1.5rem;
+        line-height: 1;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+
+        .entrance-label {
+          position: absolute;
+          left: 50%;
+          bottom: calc(100% + 0.125rem);
+          padding: 0.25rem;
+          border-radius: 0.5rem;
+          background: rgba(31, 31, 31, 0.6);
+          color: #fff;
+          font-size: 0.75rem;
+          font-weight: 400;
+          line-height: 1.2;
+          white-space: nowrap;
+          transform: translateX(-50%);
+        }
+
+        .entrance-star {
+          display: grid;
+          place-items: center;
+          width: 1.5rem;
+          height: 1.5rem;
+          border: 0.125rem solid #fff;
+          border-radius: 999rem;
+          background: #e6552c;
+          color: #fff;
+          font-size: 1rem;
+          box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.32);
+        }
       }
 
       .map-point {

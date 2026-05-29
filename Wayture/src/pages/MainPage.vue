@@ -19,6 +19,14 @@
           <div class="map-viewport">
             <div class="map-image">
             <img class="map-img" :src="tour.mapImageUrl" alt="游览地图" />
+            <div
+              class="map-entrance-marker"
+              aria-label="入口"
+              title="入口"
+            >
+              <span class="entrance-label">入口</span>
+              <el-icon class="entrance-star"><StarFilled /></el-icon>
+            </div>
             <button
               v-for="point in points"
               :key="point.id"
@@ -125,7 +133,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { ArrowRightBold, CloseBold } from '@element-plus/icons-vue';
+import { ArrowRightBold, CloseBold, StarFilled } from '@element-plus/icons-vue';
 import AttractionListView from '../components/AttractionListView.vue';
 import AttractionDetailModal from '../components/AttractionDetailModal.vue';
 import { useTourStore } from '../composables/useTourStore';
@@ -460,6 +468,48 @@ onMounted(async () => {
             transform: scale(2);
             box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.26), 0 0.625rem 1.375rem rgba(15, 23, 42, 0.28);
           }
+        }
+      }
+
+      .map-entrance-marker {
+        position: absolute;
+        left: 52.5%;
+        top: 92%;
+        z-index: 7;
+        display: grid;
+        place-items: center;
+        width: 1.875rem;
+        height: 1.875rem;
+        line-height: 1;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+
+        .entrance-label {
+          position: absolute;
+          left: 50%;
+          bottom: calc(100% + 0.125rem);
+          padding: 0.25rem;
+          border-radius: 0.5rem;
+          background: rgba(31, 31, 31, 0.6);
+          color: #fff;
+          font-size: 0.875rem;
+          font-weight: 400;
+          line-height: 1.2;
+          white-space: nowrap;
+          transform: translateX(-50%);
+        }
+
+        .entrance-star {
+          display: grid;
+          place-items: center;
+          width: 1.875rem;
+          height: 1.875rem;
+          border: 0.125rem solid #fff;
+          border-radius: 999rem;
+          background: #E6552C;
+          color: #fff;
+          font-size: 1.125rem;
+          box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.32);
         }
       }
 
