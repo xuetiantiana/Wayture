@@ -51,7 +51,12 @@
         <div class="gallery-header">
           <div>
             <h1>{{ activeSession.title }}</h1>
-            <p>{{ formatDate(activeSession.created_at) }} · 使用{{ activeSession.source_photo_count ?? 0 }}张照片生成</p>
+            <p>
+              {{ formatDate(activeSession.created_at) }}
+              <template v-if="(activeSession.source_photo_count ?? 0) > 0">
+                · 使用{{ activeSession.source_photo_count }}张照片生成
+              </template>
+            </p>
           </div>
           <!-- <button class="download-button" type="button">↓ 下载</button> -->
         </div>
@@ -487,6 +492,7 @@ onBeforeUnmount(() => {
   }
 
   .gallery-main {
+    flex: 1;
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
@@ -545,6 +551,7 @@ onBeforeUnmount(() => {
         align-items: center;
         justify-content: center;
         overflow-y: auto;
+        width: 100%;
 
         .gallery-item {
           width: min(80%, calc(100vh - 14rem) / (1024 / 1536));

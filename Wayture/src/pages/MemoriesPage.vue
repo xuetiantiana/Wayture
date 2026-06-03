@@ -779,6 +779,10 @@ onMounted(() => {
       .photo-strip {
         .photo-item {
           flex-basis: calc((100% - 0.625rem) / 2);
+
+          .delete-btn {
+            opacity: 1;
+          }
         }
       }
 
