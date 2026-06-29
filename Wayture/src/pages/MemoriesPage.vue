@@ -48,6 +48,29 @@
         </nav>
       </header>
 
+      <div class="memory-settings-controls">
+        <input
+          v-model="memoryNicknameDraft"
+          class="memory-nickname-input"
+          :placeholder="t('settings.nicknamePlaceholder')"
+          type="text"
+          @blur="commitMemoryNickname"
+        />
+        <el-select
+          v-model="memoryTourStyle"
+          class="memory-tour-style-select"
+          popper-class="memory-tour-style-popper"
+          :placeholder="t('settings.pickStyle')"
+        >
+          <el-option
+            v-for="style in memoryTourStyles"
+            :key="style.value"
+            :label="style.label"
+            :value="style.value"
+          />
+        </el-select>
+      </div>
+
       <input
         ref="fileInput"
         type="file"
@@ -176,6 +199,39 @@ const maxSelectedPhotos = 8;
 const previewExampleImage = computed(() =>
   selectedMemoryType.value === "journal" ? journalExampleImage : albumExampleImage,
 );
+const memoryNicknameDraft = ref(tour.userSettings.value.nickname);
+
+const memoryTourStyles = computed(() => [
+  { value: t('settings.styleFamily'), label: `👨‍👩‍👧 ${t('settings.styleFamily')}` },
+  { value: t('settings.styleCouple'), label: `💕 ${t('settings.styleCouple')}` },
+  { value: t('settings.styleSolo'), label: `🌿 ${t('settings.styleSolo')}` },
+  { value: t('settings.styleFriends'), label: `🎉 ${t('settings.styleFriends')}` },
+]);
+
+const memoryTourStyle = computed({
+  get: () => tour.userSettings.value.tourStyle,
+  set: (tourStyle: string) => {
+    tour.setUserSettings({
+      ...tour.userSettings.value,
+      tourStyle,
+    });
+  },
+});
+
+function commitMemoryNickname() {
+  const nickname = memoryNicknameDraft.value.trim();
+
+  if (!nickname) {
+    memoryNicknameDraft.value = tour.userSettings.value.nickname;
+    return;
+  }
+
+  tour.setUserSettings({
+    ...tour.userSettings.value,
+    nickname,
+  });
+  memoryNicknameDraft.value = nickname;
+}
 
 function normalizeUrl(url: string): string {
   if (
@@ -485,6 +541,48 @@ onMounted(() => {
       }
     }
 
+    .memory-settings-controls {
+      display: grid;
+      grid-template-columns: minmax(12rem, 1fr) minmax(12rem, 21rem);
+      gap: 1.5rem;
+      min-width: 0;
+      margin-bottom: 1.5rem;
+
+      .memory-nickname-input,
+      :deep(.el-select__wrapper) {
+        width: 100%;
+        min-height: 4rem;
+        box-sizing: border-box;
+        padding: 0 1rem;
+        border: 1px solid #dedede;
+        box-shadow: none;
+        border-radius: 0.75rem;
+        background: #f8f8f8;
+        color: #1f2933;
+        font-size: 1.125rem;
+        font-weight: 500;
+        outline: none;
+
+        &:focus,
+        &.is-focused {
+          // border-color: #e2b82f;
+          // box-shadow: 0 0 0 2px rgba(226, 184, 47, 0.18);
+        }
+      }
+
+      :deep(.el-select__placeholder),
+      :deep(.el-select__selected-item) {
+        color: #1f2933;
+        font-size: 1.125rem;
+        font-weight: 500;
+      }
+
+      .memory-tour-style-select {
+        width: 100%;
+        cursor: pointer;
+      }
+    }
+
     .upload-panel {
       display: flex;
       flex-direction: column;
@@ -520,8 +618,7 @@ onMounted(() => {
       flex-wrap: wrap;
       align-content: flex-start;
       gap: 0.625rem;
-      flex: 0 1 auto;
-      min-height: 0;
+      max-height: calc(100vh - 24rem);
       margin-bottom: 1.75rem;
       overflow-y: auto;
       padding-right: 0.25rem;
@@ -726,6 +823,33 @@ onMounted(() => {
   }
 }
 
+:global(.memory-tour-style-popper .el-select-dropdown__list) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+:global(.memory-tour-style-popper .el-select-dropdown__item) {
+  border-radius: 0.625rem;
+  padding: 0 0.875rem;
+  color: #1f2933;
+  font-size: 1rem;
+  list-height: 2.5rem;
+}
+
+:global(.memory-tour-style-popper .el-select-dropdown__item.hover),
+:global(.memory-tour-style-popper .el-select-dropdown__item:hover),
+:global(.memory-tour-style-popper .el-select-dropdown__item.is-selected) {
+  background: #e9e9e9;
+  color: #1f2933;
+  font-weight: 400;
+}
+
+:global(.memory-tour-style-popper .el-select-dropdown__item.is-selected) {
+  font-size: 1.125rem;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -758,7 +882,6 @@ onMounted(() => {
 
       .photo-strip {
         flex: none;
-        overflow-y: visible;
 
         .photo-item {
           flex-basis: calc((100% - 1.25rem) / 3);
@@ -774,6 +897,16 @@ onMounted(() => {
       .workspace-footer {
         align-items: flex-start;
         flex-direction: column;
+      }
+
+      .workspace-header {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .memory-settings-controls {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
       }
 
       .photo-strip {
